@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="<%= site.locale %>">
+  <head>
+    <%= render "head", metadata: site.metadata, title: resource.data.title %>
+  </head>
+
+  <body class="<%= resource.data.layout %> <%= resource.data.page_class %>">
+
+    <%= render Shared::Navbar.new(metadata: site.metadata, resource: resource) %>
+
+    <main>
+      <div class="w-full bg-yellow-50">
+        <section class="pt-12 relative">
+          <div class="container mx-auto px-4">
+            <div class="flex flex-wrap -mx-4">
+              <div class="mx-auto relative w-10/12 mlg:w-8/12">
+                <h3 class="text-3xl font-bold leading-normal mt-0 mb-2">Page Title</h3>
+                <h6 class="text-md mt-2 mb-0 text-gray-600">March 1, 2019</h6>
+                <article class="pt-2">
+                  <%= yield %>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <%= render "footer", metadata: site.metadata %>
+  </body>
+</html>
