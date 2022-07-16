@@ -2,9 +2,8 @@
 # Feel free to add content and custom Front Matter to this file.
 
 layout: default
+title: Welcome to your new Bridgetown website.
 ---
-
-# Welcome to your new Bridgetown website.
 
 You can learn more about how to build and deploy your new website by reading the  [Bridgetown documentation](https://www.bridgetownrb.com/docs).
 

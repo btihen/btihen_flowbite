@@ -24,11 +24,13 @@ body {
   font-size: 108%;
   line-height: 1.5;
 }
+*/
 
 a {
   color: var(--action-color);
+  font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: #ffb088;
+  text-decoration-color: #88ccff;
 }
 
 h1 {
@@ -40,6 +42,35 @@ h1 {
   line-height: 1.2;
 }
 
+h2 {
+  margin: 1rem 0 2rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 2.0rem;
+  color: var(--heading-color);
+  line-height: 1.1;
+}
+
+h3 {
+  margin: 1rem 0 1.5rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--heading-color);
+  line-height: 1.0;
+}
+
+p {
+  margin: 0 0 1.5rem;
+}
+
+hr {
+  border: none;
+  border-top: 2px dotted #88ccff;
+  margin: 3rem 0;
+}
+
+/*
 body > header {
   margin: 1rem;
   text-align: center;
@@ -86,9 +117,4 @@ footer {
   margin-bottom: 4rem;
   font-size: 1em;
 }
-
-hr {
-  border: none;
-  border-top: 2px dotted #bbb;
-  margin: 3rem 0;
-} */
+*/
