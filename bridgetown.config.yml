@@ -14,10 +14,14 @@
 # https://learnxinyminutes.com/docs/yaml/
 #
 
-url: "" # the base hostname & protocol for your site, e.g. https://example.com
+url: "https://btihen.dev" # the base hostname & protocol for your site, e.g. https://example.com
 
 permalink: pretty
 template_engine: erb
+
+collections:
+  posts:
+    permalink: /:categories/:name/
 
 # Other options you might want to investigate:
 #
