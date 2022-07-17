@@ -15,10 +15,10 @@
         <section class="pt-12 relative">
           <div class="container mx-auto px-4">
             <div class="flex flex-wrap -mx-4">
-              <div class="mx-auto relative w-full md:w-8/12">
-                <h1 class="text-3xl font-bold leading-normal mt-0 mb-2"><%= resource.data.title %></h1>
-                <h6 class="text-lg mt-2 mb-0 text-blueGray-400">Updated: <%= resource.data.updated.strftime('%F') %></h6>
-                <article class="pt-1">
+              <div class="mx-auto relative w-full md:w-10/12">
+                <div class="text-md text-right mt-2 mb-0 text-slate-500">Updated: <%= resource.data.updated.strftime('%F') %></div>
+                <h1><%= resource.data.title %></h1>
+                <article class="text-lg pt-1">
                   <%= yield %>
                 </article>
               </div>
