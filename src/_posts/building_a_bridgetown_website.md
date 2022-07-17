@@ -302,6 +302,16 @@ and
 
 ### CSS (Code Formatting)
 
+Bridgetown MD parser creates Pygments classes - so you will need to use Pygments CSS to your site with either `npm i pygments-css` or if you want to customize then copy a format from: https://github.com/richleland/pygments-css - here https://pygments.org/demo/ you can see what you like.
+
+
+NOTE: to show ERB files you must exscape the `<%%=` with a `<%%%=` for example:
+<pre><code class="highlighter-rouge">
+```erb
+<%%%= yeild %>
+```
+</code></pre>
+
 ### Blog Articles List Page
 
 
