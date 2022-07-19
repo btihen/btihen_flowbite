@@ -3,9 +3,8 @@ layout: post
 title:  "Building a Bridgetown Website"
 date:   2022-06-11 19:59:53 +0200
 updated:   2022-06-11 19:59:53 +0200
-slug: ruby
-publish: true
-categories: ruby jamf website
+blog_url: ruby
+categories: ruby, jamf, website
 summary: Steps to build a Bridgetown Website / Blogsite
 ---
 
@@ -165,8 +164,7 @@ I only updated it's `src/_components/shared/navbar.erb` file to match my prefere
 
 ```html
 <!-- src/_components/shared/navbar.erb -->
-<!-- <header> --><!-- navbar scrolls off the top -->
-<header class="top-0 sticky z-50"> <!-- fixed navbar z-50 places navbar in-front of other elements -->
+<header>
   <nav class="bg-blue-100 border-gray-200 px-2 sm:px-4 py-2.5 rounded dark:bg-gray-800">
     <div class="container flex flex-wrap justify-between items-center mx-auto">
     <a href="/" class="flex items-center">
@@ -239,33 +237,32 @@ Here I updated `src/_partials/_footer.erb` to:
 </footer>
 ```
 
-
 ### Layouts
 
 Layouts control how things are layed-out and look.
 
 I kept the basic structure that is the default with a `src/_layouts/page.erb` (injects the content and refers to the formating layout `src/_layouts/default.erb`).  In this case, I moved the page title into `default.erb` - to differentiate the format of blog article dates - so I updated them to:
-
-```erb
+```md
 # src/_layouts/page.erb
 ---
-layout default
+layout: default
+---
 
-<%%= yield %>
+<%= yield %>
 ```
+
 and
 
-```erb
-<!-- src/_layouts/default.erb -->
+```html
 <!doctype html>
-<html lang="<%%= site.locale %>">
+<html lang="<%= site.locale %>">
   <head>
-    <%%= render "head", metadata: site.metadata, title: resource.data.title %>
+    <%= render "head", metadata: site.metadata, title: resource.data.title %>
   </head>
 
-  <body class="<%%= resource.data.layout %> <%%= resource.data.page_class %>">
+  <body class="<%= resource.data.layout %> <%= resource.data.page_class %>">
 
-    <%%= render Shared::Navbar.new(metadata: site.metadata, resource: resource) %>
+    <%= render Shared::Navbar.new(metadata: site.metadata, resource: resource) %>
     <!-- default -->
 
     <main>
@@ -274,9 +271,10 @@ and
           <div class="container mx-auto px-4">
             <div class="flex flex-wrap -mx-4">
               <div class="mx-auto relative w-10/12 mlg:w-8/12">
-                <h1><%%= resource.data.title %></h1>
+                <h1><%= resource.data.title %></h1>
+                <!-- <h1 class="text-3xl font-extrabold leading-normal mt-0 mb-2"><%= resource.data.title %></h1> -->
                 <article class="pt-1">
-                  <%%= yield %>
+                  <%= yield %>
                 </article>
               </div>
             </div>
@@ -285,215 +283,26 @@ and
       </div>
     </main>
 
-    <%%= render "footer", metadata: site.metadata %>
+    <%= render "footer", metadata: site.metadata %>
   </body>
 </html>
 ```
 
 ## Pages
 
-## Blog (collection)
-
-**Blog Posts** pages (posts) are by default written in Markdown (md) and are located in: `src/_posts/` so we will build a page `src/_posts/building_a_bridgetown_website.md`.  The important part for us is the `fromtmatter` - the start of the file:
-
-```markdown
----
-layout: post
-title:  "Building a Bridgetown Website"
-date:   2022-06-11 19:59:53 +0200
-updated:   2022-06-11 19:59:53 +0200
-slug: ruby
-categories: ruby jamf website
-summary: Steps to build a Bridgetown Website / Blogsite
----
-
-Giving Bridgetown a try and playing with web technologies ...
-
-## Overview
-```
+## Configure Blog
 
 ### Configuration
 
-The important config info goes into: `bridgetown.config.yml`
-
-**URLs (permalinks)**
-
-This is the config for how Bridgetown will build the url.
-
-```
-url: "https://btihen.dev"
-
-permalink: pretty
-template_engine: erb
-
-collections:
-  posts:
-    permalink: /:slug/:name/
-
-timezone: Europe/Zurich
-pagination:
-  enabled: true
-```
+**URLs**
 
 **Pagination**
 
-To exclude a page you can simply add `exclude_from_pagination: true` to its frontmatter.
-
-```
----
-layout: post
-title:  "Your First Post on Bridgetown"
-date:   2022-06-11 19:59:53 +0200
-updated:   2022-06-11 19:59:53 +0200
-exclude_from_pagination: true
-slug: misc
-publish: false
-categories: updates
-summary: All about bridgetown
----
-
-You’ll find this post in your `_posts` directory. Go
-```
-
 ### Layouts
-
-```
-<!doctype html>
-<html lang="<%%= site.locale %>">
-  <head>
-    <%%= render "head", metadata: site.metadata, title: resource.data.title %>
-  </head>
-
-  <body class="bg-yellow-50 <%%= resource.data.layout %> <%%= resource.data.page_class %>">
-
-    <%%= render Shared::Navbar.new(metadata: site.metadata, resource: resource) %>
-
-    <!-- article -->
-    <main>
-      <div class="w-full">
-
-        <section class="pt-12 relative">
-          <div class="container mx-auto px-4">
-            <div class="flex flex-wrap -mx-4">
-              <div class="mx-auto relative w-full md:w-10/12">
-                <div class="text-md text-right mt-2 mb-0 text-slate-500">Updated: <%%= resource.data.updated.strftime('%F') %></div>
-                <h1><%%= resource.data.title %></h1>
-                <article class="text-lg pt-1">
-                  <%%= yield %>
-                </article>
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </div>
-    </main>
-
-    <%%= render "footer", metadata: site.metadata %>
-  </body>
-</html>
-```
-
-Now we need to create the summary page - `src/_posts/building_a_bridgetown_website.md`.
-
-The frontmatter must include:
-```
-paginate:
-  collection: posts
-  per_page: 8
-```
-
-the main iterator should look like:
-```
-<%% publish_blogs = paginator.resources %>
-<%% publish_blogs.each do |post| %>
-  ...
-<%% end %>
-```
-
-So altogether with Tailwind SCC:
-```
----
-layout: page
-title: Posts
-paginate:
-  collection: posts
-  per_page: 8
-  # sort_field: updated
-  # sort_reverse: true
----
-
-<div class="grid gap-8 lg:grid-cols-2">
-  <%# publish_blogs = collections.posts.resources.select {|r| !!r.data.publish } %>
-  <%% publish_blogs = paginator.resources %>
-  <%% publish_blogs.each do |post| %>
-    <article class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
-      <div class="flex justify-between items-center mb-5 text-gray-700">
-        <%% post.data.categories.each do |category| %>
-          <span class="bg-gray-100 text-gray-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">
-            <%%= category %>
-          </span>
-        <%% end %>
-        <span class="text-sm">
-          Updated: <%%= post.data.updated.strftime('%F') %>
-        </span>
-      </div>
-      <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"><a href="<%%= post.relative_url %>">
-        <%%= post.data.title %></a>
-      </h2>
-      <p class="mb-5 font-light text-gray-700 dark:text-gray-400">
-        <%%= post.data.summary %>
-      </p>
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-          <img class="w-7 h-7 rounded-full" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/jese-leos.png" alt="Jese Leos avatar" />
-          <span class="font-medium dark:text-white">
-            Bill Tihen
-          </span>
-        </div>
-        <a href="<%%= post.relative_url %>" class="inline-flex items-center font-medium text-primary-600 dark:text-primary-500 hover:underline">
-          Read
-          <svg class="ml-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd">
-            </path>
-          </svg>
-        </a>
-      </div>
-    </article>
-  <%% end %>
-</div>
-
-<hr>
-
-<%% if paginator.total_pages > 1 %>
-  <ul class="pagination">
-    <%% if paginator.previous_page %>
-    <li>
-      <a href="<%%= paginator.previous_page_path %>">Previous Page</a>
-    </li>
-    <%% end %>
-    <%% if paginator.next_page %>
-    <li>
-      <a href="<%%= paginator.next_page_path %>">Next Page</a>
-    </li>
-    <%% end %>
-  </ul>
-<%% end %>
-
-If you have a lot of posts, you may want to consider adding [pagination](https://www.bridgetownrb.com/docs/content/pagination)!
-```
 
 ### CSS (Code Formatting)
 
-Bridgetown MD parser creates Pygments classes - so you will need to use Pygments CSS to your site with either `npm i pygments-css` or if you want to customize then copy a format from: https://github.com/richleland/pygments-css - here https://pygments.org/demo/ you can see what you like.
-
-
-NOTE: to show ERB files you must exscape the `<%%=` with a `<%%%=` for example:
-<pre><code class="highlighter-rouge">
-```erb
-<%%%= yeild %>
-```
-</code></pre>
+NOTE: To show ERB code you must excape
 
 ### Blog Articles List Page
 
