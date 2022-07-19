@@ -3,7 +3,9 @@ layout: post
 title:  "Building a Bridgetown Website"
 date:   2022-06-11 19:59:53 +0200
 updated:   2022-06-11 19:59:53 +0200
-categories: ruby, jamf, website
+slug: ruby
+publish: true
+categories: ruby jamf website
 summary: Steps to build a Bridgetown Website / Blogsite
 ---
 
@@ -290,11 +292,48 @@ and
 
 ## Pages
 
-## Configure Blog
+## Blog (collection)
+
+**Blog Posts** pages (posts) are by default written in Markdown (md) and are located in: `src/_posts/` so we will build a page `src/_posts/building_a_bridgetown_website.md`.  The important part for us is the `fromtmatter` - the start of the file:
+
+```markdown
+---
+layout: post
+title:  "Building a Bridgetown Website"
+date:   2022-06-11 19:59:53 +0200
+updated:   2022-06-11 19:59:53 +0200
+slug: ruby
+categories: ruby jamf website
+summary: Steps to build a Bridgetown Website / Blogsite
+---
+
+Giving Bridgetown a try and playing with web technologies ...
+
+## Overview
+```
 
 ### Configuration
 
-**URLs**
+The important config info goes into: `bridgetown.config.yml`
+
+**URLs (permalinks)**
+
+This is the config for how Bridgetown will build the url.
+
+```
+url: "https://btihen.dev"
+
+permalink: pretty
+template_engine: erb
+
+collections:
+  posts:
+    permalink: /:slug/:name/
+
+timezone: Europe/Zurich
+pagination:
+  enabled: true
+```
 
 **Pagination**
 
