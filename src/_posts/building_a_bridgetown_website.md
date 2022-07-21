@@ -45,6 +45,17 @@ Let's start this and be sure we get the default starter page:
 bin/bridgetown start
 ```
 
+## Site Metadata
+
+Set your site’s info in src/_data/site_metadata.yml.
+
+This creates site-wide metadata variables so they’ll be easy to access and will regenerate pages when changed. This is a good place to put `<head>` content like your website title, description, favicon, social media handles, etc. Then you can reference `site.metadata.title`, etc. in your erb templates with:
+```erb
+<%%= site.metadata.title %>
+```
+
+See https://www.bridgetownrb.com/docs/datafiles for examples setting up complex fixed data structures, team lists, etc.
+
 ## Add Flowbite
 
 _Javscript helpers for Tailwind CSS_
@@ -156,6 +167,38 @@ src/images/logo_mnt_shaded.svg
 ```
 
 Now this image can be accessed with the path `/images/logo_mnt_shaded.svg`
+
+### favicon
+
+Now that we have an icon let's add it to the tab (favicon) with the tag (in the header)
+`<link rel="icon" href="/images/logo_mnt_shaded.svg" sizes="any" type="image/svg+xml">`
+
+Thus lets update the header page `src/_partials/_head.erb` to look like:
+
+```html
+<!-- src/_partials/_head.erb -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<link rel="icon" href="/images/logo_mnt_shaded.svg" sizes="any" type="image/svg+xml">
+
+<%% resource_title = strip_html(strip_newlines(title)) %>
+<title>
+  <%% if resource_title != "Index" %>
+    <%%= resource_title %> | <%%= metadata.title %>
+  <%% else %>
+    <%%= metadata.title %>: <%%= metadata.tagline %>
+  <%% end %>
+</title>
+
+<meta name="description" content="<%%= metadata.description %>" />
+
+<link rel="stylesheet" href="<%%= webpack_path :css %>" />
+<script src="<%%= webpack_path :js %>" defer></script>
+
+<%%= live_reload_dev_js %>
+```
+
 
 ### Navbar (Bridgetown Component)
 
@@ -559,12 +602,12 @@ import "bridgetown-quick-search/dist"
 3) add the search component (I've added it to the header)
 
 ```erb
-<%= liquid_render "bridgetown_quick_search/search" %>
+<%%= liquid_render "bridgetown_quick_search/search" %>
 ```
 
 if you want to get fancy you can add the attributes :
 ```erb
-<%= liquid_render "bridgetown_quick_search/search",
+<%%= liquid_render "bridgetown_quick_search/search",
                   placeholder: "Search",
                   input_class: "input",
                   theme: "dark",
@@ -595,7 +638,10 @@ In my case in the navbar `src/_components/shared/navbar.erb` I replaced:
 
 for further styling see: https://github.com/bridgetownrb/bridgetown-quick-search#styling
 
-### Search
+### SEO tags
+### Sitemap generator
+### Atom feed
+### SVG inliner
 
 ###
 

@@ -1,7 +1,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!-- favicon -->
+<%# <link rel="icon" href="favicon.ico" sizes="any" type="image/x-icon"> %>
+<link rel="icon" href="/images/logo_mnt_shaded.svg" sizes="any" type="image/svg+xml">
+<%# <link rel="manifest" href="/manifest.webmanifest"> %>
+
 <% resource_title = strip_html(strip_newlines(title)) %>
-<title><% if resource_title != "Index" %><%= resource_title %> | <%= metadata.title %><% else %><%= metadata.title %>: <%= metadata.tagline %><% end %></title>
+<title>
+  <% if resource_title != "Index" %>
+    <%= resource_title %> | <%= metadata.title %>
+  <% else %>
+    <%= metadata.title %>: <%= metadata.tagline %>
+  <% end %>
+</title>
 
 <meta name="description" content="<%= metadata.description %>" />
 
