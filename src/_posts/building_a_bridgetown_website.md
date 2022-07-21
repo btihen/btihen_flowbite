@@ -2,7 +2,7 @@
 layout: post
 title:  "Building a Bridgetown Website"
 date:   2022-06-11 19:59:53 +0200
-updated:   2022-06-11 19:59:53 +0200
+updated:   2022-07-21 01:59:53 +0200
 slug: ruby
 publish: true
 categories: ruby jamf website
@@ -290,9 +290,13 @@ and
 </html>
 ```
 
-## Pages
+## Static Pages (pages)
 
-## Blog (collection)
+Normal static pages can be in the root of the `src` folder, but I prefer to put them into `src/_pages` folder:
+
+Everything in `src/_pages` _(or `src`)_ has the url `/file_name` -- for example: `src/_pages/about.md` has the url `/about`
+
+## Blog Articles (collection)
 
 **Blog Posts** pages (posts) are by default written in Markdown (md) and are located in: `src/_posts/` so we will build a page `src/_posts/building_a_bridgetown_website.md`.  The important part for us is the `fromtmatter` - the start of the file:
 
@@ -301,15 +305,13 @@ and
 layout: post
 title:  "Building a Bridgetown Website"
 date:   2022-06-11 19:59:53 +0200
-updated:   2022-06-11 19:59:53 +0200
+updated:   2022-07-21 01:59:53 +0200
 slug: ruby
 categories: ruby jamf website
 summary: Steps to build a Bridgetown Website / Blogsite
 ---
 
 Giving Bridgetown a try and playing with web technologies ...
-
-## Overview
 ```
 
 ### Configuration
@@ -335,29 +337,10 @@ pagination:
   enabled: true
 ```
 
-**Pagination**
-
-To exclude a page you can simply add `exclude_from_pagination: true` to its frontmatter.
+### Layout
 
 ```
----
-layout: post
-title:  "Your First Post on Bridgetown"
-date:   2022-06-11 19:59:53 +0200
-updated:   2022-06-11 19:59:53 +0200
-exclude_from_pagination: true
-slug: misc
-publish: false
-categories: updates
-summary: All about bridgetown
----
-
-You’ll find this post in your `_posts` directory. Go
-```
-
-### Layouts
-
-```
+<!-- src/_layouts/article.erb -->
 <!doctype html>
 <html lang="<%%= site.locale %>">
   <head>
@@ -394,24 +377,78 @@ You’ll find this post in your `_posts` directory. Go
 </html>
 ```
 
-Now we need to create the summary page - `src/_posts/building_a_bridgetown_website.md`.
+### Sample Blog Page
+
+Let's test our layout with a blog file - `src/_posts/first_post.md`.
+
+
+```
+---
+layout: post
+title:  "Your First Post on Bridgetown"
+date:   2022-06-11 19:59:53 +0200
+updated:   2022-06-11 19:59:53 +0200
+exclude_from_pagination: true
+slug: misc
+publish: false
+categories: updates
+summary: Sample Bridgtown Post
+---
+
+You’ll find this post in your `_posts` directory.
+View with the URL: `/misc/first_post` - adjust the file `src/_layouts/article.erb` to update the look and feel.
+```
+
+NOTE:
+* To exclude a page from being listed on **blog** page add `exclude_from_pagination: true` to the page's frontmatter.
+* To exclude a page from being listed in search results add `exclude_from_search: true ` to the page's frontmatter.
+
+
+### Blog Page (list blogs)
+
+Finally lets create the pagigated list of Blog articles so we will edit `src/_pages/posts.md`.
 
 The frontmatter must include:
 ```
 paginate:
   collection: posts
-  per_page: 8
 ```
 
-the main iterator should look like:
+But I prefer to add the pagination size and the sorting with the following attributes.
 ```
-<%% publish_blogs = paginator.resources %>
-<%% publish_blogs.each do |post| %>
-  ...
+paginate:
+  collection: posts
+  per_page: 8
+  sort_field: updated
+  sort_reverse: true
+```
+
+the main iterator now needs to use `paginator.resources` instead of `collections.posts.resources`.  So now the iterator looks like:
+```
+<%% paginator.resources.each do |post| %>
+  ...<!-- display content -->
 <%% end %>
 ```
 
-So altogether with Tailwind SCC:
+Normally you will also want to add pagination navigation links -- the following is simple but works well.
+```erb
+<%% if paginator.total_pages > 1 %>
+  <ul class="pagination">
+    <%% if paginator.previous_page %>
+    <li>
+      <a href="<%%= paginator.previous_page_path %>">Previous Page</a>
+    </li>
+    <%% end %>
+    <%% if paginator.next_page %>
+    <li>
+      <a href="<%%= paginator.next_page_path %>">Next Page</a>
+    </li>
+    <%% end %>
+  </ul>
+<%% end %>
+```
+
+So altogether the post page `src/_pages/posts.md` looks like:
 ```
 ---
 layout: page
@@ -419,14 +456,12 @@ title: Posts
 paginate:
   collection: posts
   per_page: 8
-  # sort_field: updated
-  # sort_reverse: true
+  sort_field: updated
+  sort_reverse: true
 ---
 
 <div class="grid gap-8 lg:grid-cols-2">
-  <%# publish_blogs = collections.posts.resources.select {|r| !!r.data.publish } %>
-  <%% publish_blogs = paginator.resources %>
-  <%% publish_blogs.each do |post| %>
+  <%% paginator.resources.each do |post| %>
     <article class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
       <div class="flex justify-between items-center mb-5 text-gray-700">
         <%% post.data.categories.each do |category| %>
@@ -465,6 +500,7 @@ paginate:
 
 <hr>
 
+<!-- pagination links at the bottom of the page -->
 <%% if paginator.total_pages > 1 %>
   <ul class="pagination">
     <%% if paginator.previous_page %>
@@ -483,7 +519,9 @@ paginate:
 If you have a lot of posts, you may want to consider adding [pagination](https://www.bridgetownrb.com/docs/content/pagination)!
 ```
 
-### CSS (Code Formatting)
+### Code Formatting
+
+For technical blogs this is very helpful and straightforward.
 
 Bridgetown MD parser creates Pygments classes - so you will need to use Pygments CSS to your site with either `npm i pygments-css` or if you want to customize then copy a format from: https://github.com/richleland/pygments-css - here https://pygments.org/demo/ you can see what you like.
 
@@ -495,10 +533,67 @@ NOTE: to show ERB files you must exscape the `<%%=` with a `<%%%=` for example:
 ```
 </code></pre>
 
-### Blog Articles List Page
-
-
 ## Plugins
+
+### Site Search
+
+Now that we have added a blog with more potentially more pages than we can explicity link to - search is very useful.
+
+There is a great search plugin: https://github.com/bridgetownrb/bridgetown-quick-search that's easy to implement.
+
+So here is how it is done in a three quick steps:
+
+1) Install the plugin:
+```bash
+bundle add bridgetown-quick-search -g bridgetown_plugins
+```
+
+2) include the javascript code in `frontend/javascript/index.js`
+
+```javascript
+// frontend/javascript/index.js
+
+import "bridgetown-quick-search/dist"
+```
+
+3) add the search component (I've added it to the header)
+
+```erb
+<%= liquid_render "bridgetown_quick_search/search" %>
+```
+
+if you want to get fancy you can add the attributes :
+```erb
+<%= liquid_render "bridgetown_quick_search/search",
+                  placeholder: "Search",
+                  input_class: "input",
+                  theme: "dark",
+                  snippet_length: 200 %>
+```
+
+In my case in the navbar `src/_components/shared/navbar.erb` I replaced:
+```erb
+<!-- src/_components/shared/navbar.erb -->
+<!-- old -->
+<div class="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
+  <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd">
+    </path>
+  </svg>
+</div>
+<input type="text" id="search-navbar" class="block p-2 pl-10 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-300 sm:text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Search...">
+
+<!-- new -->
+<div class="flex absolute inset-y-0 right-7 items-center pl-3 pointer-events-none">
+  <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd">
+    </path>
+  </svg>
+</div>
+<%%= liquid_render 'bridgetown_quick_search/search', snippet_length: 200, placeholder: 'search' %>
+```
+
+for further styling see: https://github.com/bridgetownrb/bridgetown-quick-search#styling
 
 ### Search
 

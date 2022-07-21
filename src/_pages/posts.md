@@ -1,10 +1,17 @@
 ---
 layout: page
 title: Posts
+paginate:
+  collection: posts
+  per_page: 8
+  sort_field: updated
+  sort_reverse: true
 ---
 
 <div class="grid gap-8 lg:grid-cols-2">
-  <% collections.posts.resources.each do |post| %>
+  <%# publish_blogs = collections.posts.resources.select {|r| !!r.data.publish } %>
+  <% publish_blogs = paginator.resources %>
+  <% publish_blogs.each do |post| %>
     <article class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
       <div class="flex justify-between items-center mb-5 text-gray-700">
         <% post.data.categories.each do |category| %>
@@ -42,5 +49,20 @@ title: Posts
 </div>
 
 <hr>
+
+<% if paginator.total_pages > 1 %>
+  <ul class="pagination">
+    <% if paginator.previous_page %>
+    <li>
+      <a href="<%= paginator.previous_page_path %>">Previous Page</a>
+    </li>
+    <% end %>
+    <% if paginator.next_page %>
+    <li>
+      <a href="<%= paginator.next_page_path %>">Next Page</a>
+    </li>
+    <% end %>
+  </ul>
+<% end %>
 
 If you have a lot of posts, you may want to consider adding [pagination](https://www.bridgetownrb.com/docs/content/pagination)!
