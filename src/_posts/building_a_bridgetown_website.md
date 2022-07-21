@@ -199,7 +199,6 @@ Thus lets update the header page `src/_partials/_head.erb` to look like:
 <%%= live_reload_dev_js %>
 ```
 
-
 ### Navbar (Bridgetown Component)
 
 Like many other frontend frameworks reusable (and encapsulated - including CSS) components are possible - the default navbar is an example of this.  Components accept parameters - in this case you can see in `src/_components/shared/navbar.rb` it accepts `metadata` & `resource` in the statement: `initialize(metadata:, resource:)`
@@ -298,7 +297,7 @@ layout default
 ```
 and
 
-```erb
+```html
 <!-- src/_layouts/default.erb -->
 <!doctype html>
 <html lang="<%%= site.locale %>">
@@ -339,11 +338,15 @@ Normal static pages can be in the root of the `src` folder, but I prefer to put 
 
 Everything in `src/_pages` _(or `src`)_ has the url `/file_name` -- for example: `src/_pages/about.md` has the url `/about`
 
+So now the structure looks like:
+
+![folder image](/images/building_a_bridgetown_website/pages_structure.png)
+
 ## Blog Articles (collection)
 
 **Blog Posts** pages (posts) are by default written in Markdown (md) and are located in: `src/_posts/` so we will build a page `src/_posts/building_a_bridgetown_website.md`.  The important part for us is the `fromtmatter` - the start of the file:
 
-```markdown
+```
 ---
 layout: post
 title:  "Building a Bridgetown Website"
@@ -365,7 +368,7 @@ The important config info goes into: `bridgetown.config.yml`
 
 This is the config for how Bridgetown will build the url.
 
-```
+```yaml
 url: "https://btihen.dev"
 
 permalink: pretty
@@ -382,7 +385,7 @@ pagination:
 
 ### Layout
 
-```
+```html
 <!-- src/_layouts/article.erb -->
 <!doctype html>
 <html lang="<%%= site.locale %>">
