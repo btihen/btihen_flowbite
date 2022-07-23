@@ -15,7 +15,10 @@
   <% end %>
 </title>
 
+<meta property="og:image" content="<%= metadata.base_url %><%= metadata.image %>">
 <meta name="description" content="<%= metadata.description %>" />
+<meta property="og:description" content="<%= metadata.description %>" />
+<%= seo %>
 
 <link rel="stylesheet" href="<%= webpack_path :css %>" />
 <script src="<%= webpack_path :js %>" defer></script>
