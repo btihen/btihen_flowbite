@@ -16,7 +16,9 @@
           <div class="container mx-auto px-4">
             <div class="flex flex-wrap -mx-4">
               <div class="mx-auto relative w-full md:w-10/12">
-                <div class="text-md text-right mt-2 mb-0 text-slate-500">Updated: <%= resource.data.updated.strftime('%F') %></div>
+                <div class="text-md text-right mt-2 mb-0 text-slate-500">
+                  Updated: <%= resource.data.updated&.strftime('%F') %>
+                </div>
                 <h1><%= resource.data.title %></h1>
                 <article class="text-lg pt-1">
                   <%= yield %>

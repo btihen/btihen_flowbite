@@ -9,8 +9,6 @@ categories: ruby jamf website
 summary: Steps to build a Bridgetown Website / Blogsite
 ---
 
-<a href="https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown">https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown</a>
-
 I wanted to play with some new web technologies and rebuild my website/blog with my own Design and make it human and machine searchable.
 
 I decided to give Bridgetown a try - as I am familiar with Ruby and thought and wanted to get familiar with TailwindCSS.
@@ -49,14 +47,14 @@ bin/bridgetown start
 
 ## Site Metadata
 
-Set your site’s info in src/_data/site_metadata.yml.
+Set your site’s info in `src/_data/site_metadata.yml`.
 
 This creates site-wide metadata variables so they’ll be easy to access and will regenerate pages when changed. This is a good place to put `<head>` content like your website title, description, favicon, social media handles, etc. Then you can reference `site.metadata.title`, etc. in your erb templates with:
 ```erb
 <%%= site.metadata.title %>
 ```
 
-See https://www.bridgetownrb.com/docs/datafiles for examples setting up complex fixed data structures, team lists, etc.
+See [https://www.bridgetownrb.com/docs/datafiles](https://www.bridgetownrb.com/docs/datafiles) for examples setting up complex fixed data structures, team lists, etc.
 
 ## Add Flowbite
 
@@ -588,10 +586,10 @@ If you have a lot of posts, you may want to consider adding [pagination](https:/
 
 For technical blogs this is very helpful and straightforward.
 
-Bridgetown MD parser creates Pygments classes - so you will need to use Pygments CSS to your site with either `npm i pygments-css` or if you want to customize then copy a format from: https://github.com/richleland/pygments-css - here https://pygments.org/demo/ you can see what you like.
+Bridgetown MD parser creates Pygments classes - so you will need to use Pygments CSS to your site with either `npm i pygments-css` or if you want to customize then copy a format from: [https://github.com/richleland/pygments-css](https://github.com/richleland/pygments-css) - here [https://pygments.org/demo/](https://pygments.org/demo/) you can see what you like.
 
 
-So in order to format the code & have it scroll when too long for the code width allowed, I added the follow to `frontend/styles/index.css` from https://github.com/richleland/pygments-css with examples at: https://pygments.org/styles/ or https://pygments.org/demo
+So in order to format the code & have it scroll when too long for the code width allowed, I added the follow to `frontend/styles/index.css` from [https://github.com/richleland/pygments-css](https://github.com/richleland/pygments-css) with examples at: [https://pygments.org/styles/](https://pygments.org/styles/) or [https://pygments.org/demo](https://pygments.org/demo)
 
 ```css
 pre {
@@ -680,9 +678,9 @@ pre {
 .highlight .il { color: #ae81ff } /* Literal.Number.Integer.Long */
 ```
 
-PS: Jekle Code themes are also a good source: https://github.com/jwarby/jekyll-pygments-themes with examples at: http://jwarby.github.io/jekyll-pygments-themes/languages/javascript.html
+PS: Jekle Code themes are also a good source: [https://github.com/jwarby/jekyll-pygments-themes](https://github.com/jwarby/jekyll-pygments-themes) with examples at: [http://jwarby.github.io/jekyll-pygments-themes/languages/javascript.html](http://jwarby.github.io/jekyll-pygments-themes/languages/javascript.html)
 
-Alternatively: you can also use npm to install the css (https://www.npmjs.com/package/pygments-css) using:
+Alternatively: you can also use npm to install the css [https://www.npmjs.com/package/pygments-css](https://www.npmjs.com/package/pygments-css) using:
 ```bash
 npm i pygments-css
 ```
@@ -709,7 +707,7 @@ NOTE: to show ERB files you must exscape the `<%%=` with a `<%%%=` for example:
 
 Now that we have added a blog with more potentially more pages than we can explicity link to - search is very useful.
 
-There is a great search plugin: https://github.com/bridgetownrb/bridgetown-quick-search that's easy to implement.
+There is a great search plugin: [https://github.com/bridgetownrb/bridgetown-quick-search](https://github.com/bridgetownrb/bridgetown-quick-search) that's easy to implement.
 
 So here is how it is done in a three quick steps:
 
@@ -774,13 +772,13 @@ input[type="search"] {
 }
 ```
 
-for further styling see: https://github.com/bridgetownrb/bridgetown-quick-search#styling
+for further styling see: [https://github.com/bridgetownrb/bridgetown-quick-search#styling](https://github.com/bridgetownrb/bridgetown-quick-search#styling)
 
 ### SEO tags
 
 Bridgetown SEO Tag adds important meta tags to your site!
 
-https://github.com/bridgetownrb/bridgetown-seo-tag
+[https://github.com/bridgetownrb/bridgetown-seo-tag](https://github.com/bridgetownrb/bridgetown-seo-tag)
 
 ```bash
 bundle add bridgetown-seo-tag -g bridgetown_plugins
@@ -803,7 +801,7 @@ twitter:
   image: /image/
 ```
 
-A full list of attributes and features can be found at: https://github.com/bridgetownrb/bridgetown-seo-tag#usage
+A full list of attributes and features can be found at: [https://github.com/bridgetownrb/bridgetown-seo-tag#usage](https://github.com/bridgetownrb/bridgetown-seo-tag#usage)
 
 now in the header `src/_partials/_head.erb` I added:
 
@@ -814,25 +812,25 @@ now in the header `src/_partials/_head.erb` I added:
 <%%= seo %>
 ```
 
-NOTE: I added `base_url` in the `src/_data/site_metadata.yml` file since I wasn't able to access the `site.url` data from `bridgetown.config.yml` as I expected from reading the variables page https://www.bridgetownrb.com/docs/variables.
+NOTE: I added `base_url` in the `src/_data/site_metadata.yml` file since I wasn't able to access the `site.url` data from `bridgetown.config.yml` as I expected from reading the variables page [https://www.bridgetownrb.com/docs/variables](https://www.bridgetownrb.com/docs/variables).
 
 ### Sitemap generator
 
-https://github.com/ayushn21/bridgetown-sitemap
+[https://github.com/ayushn21/bridgetown-sitemap](https://github.com/ayushn21/bridgetown-sitemap)
 
 ### Atom feed
 
-https://github.com/bridgetownrb/bridgetown-feed
+[https://github.com/bridgetownrb/bridgetown-feed](https://github.com/bridgetownrb/bridgetown-feed)
 
 ### SVG inliner
 
-https://github.com/ayushn21/bridgetown-svg-inliner
+[https://github.com/ayushn21/bridgetown-svg-inliner](https://github.com/ayushn21/bridgetown-svg-inliner)
 
 ## Custom Fonts
 
 Its often nice to add a custom font to a website.
 
-We will add the handlee font as it is distinctive and easy to see that it works (or not). Let’s get it from Google Webfonts Helper - https://google-webfonts-helper.herokuapp.com/fonts/handlee?subsets=latin - this is a convenient site as it has both the font and the CSS needed.
+We will add the handlee font as it is distinctive and easy to see that it works (or not). Let’s get it from Google Webfonts Helper - [https://google-webfonts-helper.herokuapp.com/fonts/handlee?subsets=latin](https://google-webfonts-helper.herokuapp.com/fonts/handlee?subsets=latin) - this is a convenient site as it has both the font and the CSS needed.
 
 The following worked well for me.
 
@@ -942,24 +940,41 @@ git push
 **Third**, connect your netlify account to the repo you just created.
 Four, click deploy within the netlify site (if it hasn’t already startet) and wait 5-10 mins (yes its kinda slow to deploy) and you should have your new website!
 
+## Overview
+
+Overall, its a great, complete (albeit young) platform and will problably grow and become even better.
+
+### Positives
+
+Uses ruby, erb, StimulusJS, TailwindCSS and many popular pre-configured deployments configs (netlify, render, etc) - technologies many rails developers know and understand.
+
+### Drawback
+
+I never got AlpineJS to load as an npm package (also not in Rails 7), however StimulusJS is the recommended JS sprinkles and that installs well.
+
+Unlike Hugo, Gatsby, Next, Nuxt, ... there is to date no easy to use  CMS making it easy for non-techs to use and add content.
+
+The biggest drawback for me is that the Bridgetown errors are often missing, misleading or unspecific - sometimes no line number, sometimes not even the file.  I expect this will improve with time.
+
+
 ## Resources
 
 ### Bridgetown
 
-* https://www.bridgetownrb.com/docs
-* https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown
+* [https://www.bridgetownrb.com/docs](https://www.bridgetownrb.com/docs)
+* [https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown](https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown)
 
 ### Flowbite
 
-* https://flowbite.com/docs/getting-started/introduction/#getting-started
+* [https://flowbite.com/docs/getting-started/introduction/#getting-started](https://flowbite.com/docs/getting-started/introduction/#getting-started)
 
 ### SVG Favicon
 
-* https://stackoverflow.com/questions/34446050/svg-favicon-not-working
+* [https://stackoverflow.com/questions/34446050/svg-favicon-not-working](https://stackoverflow.com/questions/34446050/svg-favicon-not-working)
 
 ### Pygments
 
-* https://richleland.github.io/pygments-css/
-* https://github.com/richleland/pygments-css
-* https://www.npmjs.com/package/pygments-css
-* https://raw.githubusercontent.com/richleland/pygments-css/master/monokai.css
+* [https://richleland.github.io/pygments-css/](https://richleland.github.io/pygments-css/)
+* [https://github.com/richleland/pygments-css](https://github.com/richleland/pygments-css)
+* [https://www.npmjs.com/package/pygments-css](https://www.npmjs.com/package/pygments-css)
+* [https://raw.githubusercontent.com/richleland/pygments-css/master/monokai.css](https://raw.githubusercontent.com/richleland/pygments-css/master/monokai.css)
