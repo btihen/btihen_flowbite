@@ -15,6 +15,7 @@
 #
 
 url: "https://btihen.dev" # the base hostname & protocol for your site, e.g. https://example.com
+content_engine: "resource" # sitemap.xml directive to use 'resources'
 
 permalink: pretty
 template_engine: erb

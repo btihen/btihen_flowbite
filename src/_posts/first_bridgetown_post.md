@@ -3,7 +3,7 @@ layout: post
 title:  "Your First Post on Bridgetown"
 date:   2022-07-24 16:35:18 +0200
 categories: updates
-updated: 2022-07-26 01:59:53 +0200
+updated: 2022-07-20 01:59:53 +0200
 slug: ruby
 summary: basic features
 ---

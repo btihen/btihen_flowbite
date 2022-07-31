@@ -1,8 +1,8 @@
 ---
 layout: post
 title:  "Building a Bridgetown Website"
-date:   2022-06-11 19:59:53 +0200
-updated:   2022-07-21 01:59:53 +0200
+date:   2022-06-11 01:59:53 +0200
+updated:   2022-07-28 01:59:53 +0200
 slug: ruby
 publish: true
 categories: ruby jamf website
@@ -774,9 +774,13 @@ input[type="search"] {
 
 for further styling see: [https://github.com/bridgetownrb/bridgetown-quick-search#styling](https://github.com/bridgetownrb/bridgetown-quick-search#styling)
 
-### SEO tags
+### Usability & SEO
 
-Bridgetown SEO Tag adds important meta tags to your site!
+If we run `lighthouse` (in Chome Dev-Toools) we will find a few problems.  To adress them we can use a few more plugins.
+
+#### SEO Tags & Social Media Sharing
+
+Bridgetown SEO Tag adds important meta tags to your site! As well as creates a social media card. The site image you need to choose and add yourself.
 
 [https://github.com/bridgetownrb/bridgetown-seo-tag](https://github.com/bridgetownrb/bridgetown-seo-tag)
 
@@ -791,32 +795,70 @@ now got to `src/_data/site_metadata.yml` and add the SEO metadata:
 title: btihen
 tagline: Dev Notes
 author: Bill Tihen
-base_url: https://btihen.dev
 email: your-email@example.com
+base_url: https://btihen.dev
+image: /images/logo_mnt_shaded.svg
 description: >-
-  Mostly Dev article exploration and notes, so I don't forget & maybe help others
+  Article explorating and notes, so I don't forget & maybe help others
 twitter:
   username: btihen
   card: summary
-  image: /image/
+  # image: /image/logo_mnt_shaded.svg
 ```
 
 A full list of attributes and features can be found at: [https://github.com/bridgetownrb/bridgetown-seo-tag#usage](https://github.com/bridgetownrb/bridgetown-seo-tag#usage)
 
-now in the header `src/_partials/_head.erb` I added:
+now in the header `src/_partials/_head.erb`
 
 ```html
+<!-- ensures we always have an image to share on each social media share -->
 <meta property="og:image" content="<%%= metadata.base_url %><%%= metadata.image %>">
+<!-- ensures a general description for the site and social media shares -->
 <meta property="og:description" content="<%%= metadata.description %>" />
 <meta name="description" content="<%%= metadata.description %>" />
+<!-- add the seo tags to each page -->
 <%%= seo %>
 ```
 
 NOTE: I added `base_url` in the `src/_data/site_metadata.yml` file since I wasn't able to access the `site.url` data from `bridgetown.config.yml` as I expected from reading the variables page [https://www.bridgetownrb.com/docs/variables](https://www.bridgetownrb.com/docs/variables).
 
-### Sitemap generator
+#### Robots.txt File
+
+```markdown
+User-agent: *
+Allow: /
+Disallow:
+
+Sitemap: https://btihen.dev/sitemap.xml
+```
+
+now test this works at: `http://localhost:4000/robots.txt`
+
+
+#### Sitemap generator
 
 [https://github.com/ayushn21/bridgetown-sitemap](https://github.com/ayushn21/bridgetown-sitemap)
+
+now lets build our sitemap.xml
+
+```bash
+bundle add bridgetown-sitemap -g bridgetown_plugins
+```
+
+now we need to update `bridgetown.config.yml`
+
+First, be sure to define the `url:` attribute.
+Second, be sure to define the
+
+```yml
+
+url: "https://btihen.dev" # the base hostname with protocol, e.g. https://example.com
+content_engine: "resource" # sitemap.xml directive to use 'resources'
+```
+
+Be sure this works by going to: `http://localhost:4000/sitemap.xml`
+
+-------
 
 ### Atom feed
 
