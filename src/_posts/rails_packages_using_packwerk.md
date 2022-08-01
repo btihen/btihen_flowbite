@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Modular Rails using Packwerk"
-date:   2022-07-31 01:59:53 +0200
-updated:   2022-07-31 01:59:53 +0200
+title:  "Rails Packages using Packwerk"
+date:   2022-08-01 01:59:53 +0200
+updated:   2022-08-01 01:59:53 +0200
 slug: ruby
 publish: true
 categories: ruby modules citadel architechture
@@ -13,7 +13,43 @@ I have been interested in building Rails with much less accidental coupling.  Un
 
 Packwerk however, makes it easy to use modules and critcially migrate toward modules overtime.  Packwerk allows you to organize into modules, without enforcing boundaries - until you are ready to fully refactor and disentagle your code.
 
+To demonstrate Packwerk's usage lets start with a Standard Rails Monolith and iteratively transform it into discrete packages with boundaries.
+
 ------------
+
+## Simple App
+
+Lets make a very simple Blog App as our starting point.
+
+NOTE: Packwerk require Ruby 2.6 or newer and Rails must be configured with Zeitwerk.
+
+```bash
+rails new packaged --javascript=esbuild --css=tailwind
+cd packaged
+bin/rails db:create
+bin/rails g controller landing index --no-helper
+bin/rails g scaffold user full_name email --no-helper
+bin/rails g scaffold post content user:references --no-helper
+bin/rails db:migrate
+```
+
+now lets update the routes with:
+```ruby
+# config/routes.rb
+Rails.application.routes.draw do
+  scope 'author' do
+    resources :blogs, only: [index, get]
+  end
+  scope 'author' do
+    resources :blogs
+  end
+  scope 'manage' do
+    resources :users
+  end
+  get '/landing', to: 'landing#index'
+  root 'landing#index' # root path route ("/")
+end
+```
 
 ## Setup
 
@@ -34,12 +70,6 @@ You will also need to use at least `Ruby 2.6+` and `Rails 6.0+` with `Zeitwerk` 
 This will be a very simple projects (too simple to need modules), but that also makes the examples easier to grock.
 
 We will start with a fresh rails projects to keep the complexity low and make it straight-forward to follow along before using in your own established projects.
-
-```bash
-rails new packwerk --javascript=esbuild --css=tailwind
-cd packwerk
-bin/rails db:create
-```
 
 Now add the packwerk and graphwerk gems to `./Gemfile`
 ```ruby
@@ -531,76 +561,16 @@ Cool, let's run our tests again and be sure all is still working!
 Let's now make a space for authors to work with their articles
 
 ```bash
-bin/rails g scaffold post content user:references --no-helper
+bin/rails g scaffold post content user:references --no-helpers
 ```
 
-lets give authors a scope - in `config/routes.rb` replace `resources :posts` with:
-```ruby
-# config/routes.rb
-...
-  scope 'author' do
-    resources :posts
-  end
-...
-```
 
-Now lets setup the `author` package.
 
-```bash
-mkdir -p app/packages/author
-mkdir -p app/packages/author/public
-mkdir -p app/packages/author/models
-touch app/packages/author/package.yml
-mkdir -p app/packages/author/controllers
-mv app/views/posts app/packages/author/views/posts
-mv app/models/blog.rb app/packages/core/public/blog.rb
-cp app/controllers/posts_controller.rb app/packages/author/controllers/posts_controller.rb
-```
 
-Lets make `app/packages/author/package.yml` the same as `app/packages/manage/package.yml`
-```yml
-# Turn on dependency checks for this package
-enforce_dependencies: true
 
-# Turn on privacy checks for this package
-enforce_privacy: true
+### Articles Package
 
-# this allows you to modify what your package's public path is within the package
-public_path: public/
-
-# A list of this package's dependencies
-# Note that packages in this list require their own `package.yml` file
-dependencies:
-- '.'
-- 'app/packages/core'
-```
-
-lets now check the dependency graph
-```bash
-bin/rails graphwerk:update
-```
-
-![Author Package](/images/rails_modules_using_packwerk/with_author_package.png)
-
-Lets check dependencies:
-```bash
-bin/packwerk check
-```
-
-We are now good to go
-```bash
-No offenses detected
-No stale violations detected
-```
-
-------------
-
-### Rails Package
-
-Now lets clean things up and put rails into a package:
-
-![Rails Package](/images/rails_modules_using_packwerk/packaged_structure.png)
-
+for public reading
 
 ------------
 
