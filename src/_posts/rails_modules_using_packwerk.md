@@ -172,12 +172,12 @@ cp package.yml app/packages/core/package.yml
 
 **IDEALLY, by looking within `app/packages` the next person will have a decent idea about what the code does and what happens where.**
 
-### Marketing
+### Marketing Package
 
 Lets generate a landing page:
 
 ```bash
-bin/rails g controller landing index --no-helper --no-assets
+bin/rails g controller landing index --no-helper
 ```
 
 now lets update the routes with:
@@ -200,6 +200,7 @@ Now lets move this to the marketing package. To do this we will recreate the cod
 
 Creating the package structure:
 ```bash
+mkdir app/packages/marketing/public
 mkdir app/packages/marketing/controllers
 mkdir -p app/packages/marketing/views/landings
 # if you created a helper file then also:
@@ -215,7 +216,7 @@ mv app/helpers/landing_helper.rb app/packages/marketing/helpers/.
 ```
 
 Finally, lets configure the package in the file `app/packages/marketing/package.yml` - we will use the simplest possible config.
-```ruby
+```yml
 # app/packages/marketing/package.yml
 # Turn on dependency checks for this package
 enforce_dependencies: true
@@ -278,7 +279,7 @@ if your graph looks the same as before, check that `app/packages/marketing/packa
 
 If all is well the new graph in `packwerk.png` will look like:
 
-![Marketing Structure](/images/rails_modules_using_packwerk/with_marketing_packages.png)
+![Marketing Structure](/images/rails_modules_using_packwerk/with_marketing_package.png)
 
 Now that the package is recognized, lets if packwerk finds any problems
 ```bash
@@ -291,18 +292,260 @@ No offenses detected
 No stale violations detected
 ```
 
+---------
+
+### Manage Package
+
+Let's generate the user management code:
+
+```bash
+bin/rails g scaffold user full_name email --no-helper
+bin/rails db:migrate
+```
+
+As you can see this generate a log more code.  Models, Controllers, views, etc.  This also generates code that is used for different purposes.
+
+Let's test that this works and consider the code implications.
+
+We should be able to go to `localhost:3000/users` and create and view new users (much like a manager will need to do to manage users). The user model itself will need to be available within the composition area to associati with an article.
+
+Now that we want to setup the `manage` package where admins can manage users.  To do this let's start by creating a routing scope in the routes file `config/routes.rb` by changeing `resources :users` to:
+```ruby
+# config/routes.rb
+  scope 'manage' do
+    resources :users
+  end
+```
+
+lets first be sure we can now access users with: `localhost:3000/manage/users`
+
+lets now make our new `manage` package structure:
+```bash
+mkdir app/packages/manage
+mkdir app/packages/manage/controller
+mkdir app/packages/manage/public
+mkdir app/packages/manage/views
+```
+
+and add the appropriate files:
+```bash
+cp package.yml app/packages/manage/package.yml
+mv app/controllers/users_controller.rb app/packages/manage/controller/users_controller.rb
+mv app/packages/manage/views/users app/packages/manage/views/users
+```
+
+Let's be sure things still work by going to: `localhost:3000/manage/users`
+
+Let's check that the dependencies look like we expect:
+
+`bin/rails graphwerk:update`
+
+and hopefully we see:
+
+![Manage Package](/images/rails_modules_using_packwerk/with_manage_package.png)
+
+now let's check for violations using: `bin/packwerk check` and hopefully we see:
+```
+No offenses detected
+No stale violations detected
+```
 
 
 
+---------
+### Core Package
 
-### Author Pages
+Lets decide what all aspects of the 'blog' application will be central to blog `composition` and site `management`
+
+To start we will need to allow users to login and manage their own articles - however the site admins will need to be able to block and otherwise manage users as needed.  Thus users are a good canditate for the `core` package.
+
+Lets see how we can do this.
+
+```bash
+bin/rails g scaffold user full_name email --no-helper
+bin/rails db:migrate
+```
+
+As you can see this generate a log more code.  Models, Controllers, views, etc.  This also generates code that is used for different purposes.
+
+Let's test that this works and consider the code implications.
+
+We should be able to go to `localhost:3000/users` and create and view new users (much like a manager will need to do to manage users). The user model itself will need to be available within the composition area to associati with an article.
+
+Thus it seems like `users` might be appropriate in the `core` package and the controller and view belong in the `manage` package.
+
+To do this lets move the `user` model into the `core` package.
+
+```bash
+mkdir -p app/packages/core
+mkdir -p app/packages/core/public
+mkdir -p app/packages/core/models
+touch app/packages/core/package.yml
+mv app/models/user.rb app/packages/core/models/user.rb
+```
+
+Lets use the same very basic package.yml as before (enforcement and dependent on the `rails` infrastructure):
+```yml
+# Turn on dependency checks for this package
+enforce_dependencies: true
+
+# Turn on privacy checks for this package
+enforce_privacy: true
+
+# this allows you to modify what your package's public path is within the package
+public_path: public/
+
+# A list of this package's dependencies
+# Note that packages in this list require their own `package.yml` file
+dependencies:
+- '.'
+```
+
+Let's see if the code still works like before.
+
+Let's be sure our dependency map is now updated
+
+`bin/rails graphwerk:update`
+
+and we should see:
+![Core Package](/images/rails_modules_using_packwerk/with_core_package.png)
+
+You will see that everything still relies on `application` (the rails framework).  Some people will move that into a package too, but we know we are using rails and are dependent upon it, so I don't see any reason to package rails.  (in my mind it may not be necessary to show that we are dependent upon rails, but whatever)
+
+Now finally, let's check our enforcement with:
+
+`bin/packwerk check`
+
+oops - now we have multiple `dependency` and `privacy` violations:
+```log
+app/packages/manage/controller/users_controller.rb:6:13
+Dependency violation: ::User belongs to 'app/packages/core', but 'app/packages/manage' does not specify a dependency on 'app/packages/core'.
+Are we missing an abstraction?
+Is the code making the reference, and the referenced constant, in the right packages?
+
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/public/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
 
 
-### Admin Pages
+app/packages/manage/controller/users_controller.rb:15:12
+Dependency violation: ::User belongs to 'app/packages/core', but 'app/packages/manage' does not specify a dependency on 'app/packages/core'.
+Are we missing an abstraction?
+Is the code making the reference, and the referenced constant, in the right packages?
+
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/public/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+
+
+app/packages/manage/controller/users_controller.rb:24:12
+Dependency violation: ::User belongs to 'app/packages/core', but 'app/packages/manage' does not specify a dependency on 'app/packages/core'.
+Are we missing an abstraction?
+Is the code making the reference, and the referenced constant, in the right packages?
+
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/public/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+
+
+app/packages/manage/controller/users_controller.rb:63:14
+Dependency violation: ::User belongs to 'app/packages/core', but 'app/packages/manage' does not specify a dependency on 'app/packages/core'.
+Are we missing an abstraction?
+Is the code making the reference, and the referenced constant, in the right packages?
+
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/public/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+```
+
+These messages state that we need to declare our dependency on `core` within `manage`, we can do this by adding `'app/packages/core'` into the `app/packages/manage/package.yml` so that it would now look like:
+```yml
+# Turn on dependency checks for this package
+enforce_dependencies: true
+
+# Turn on privacy checks for this package
+enforce_privacy: true
+
+# this allows you to modify what your package's public path is within the package
+public_path: public/
+
+# A list of this package's dependencies
+# Note that packages in this list require their own `package.yml` file
+dependencies:
+- '.'
+- 'app/packages/core'
+```
+
+Now that we have declared our dependencies, let's see if all is well now:
+
+
+`bin/packwerk check`
+
+oops now we have a privacy violation:
+```log
+app/packages/manage/controller/users_controller.rb:6:13
+Privacy violation: '::User' is private to 'app/packages/core' but referenced from 'app/packages/manage'.
+Is there a public entrypoint in 'app/packages/core/public/' that you can use instead?
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/models/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+
+
+app/packages/manage/controller/users_controller.rb:15:12
+Privacy violation: '::User' is private to 'app/packages/core' but referenced from 'app/packages/manage'.
+Is there a public entrypoint in 'app/packages/core/public/' that you can use instead?
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/models/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+
+
+app/packages/manage/controller/users_controller.rb:24:12
+Privacy violation: '::User' is private to 'app/packages/core' but referenced from 'app/packages/manage'.
+Is there a public entrypoint in 'app/packages/core/public/' that you can use instead?
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/models/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+
+
+app/packages/manage/controller/users_controller.rb:63:14
+Privacy violation: '::User' is private to 'app/packages/core' but referenced from 'app/packages/manage'.
+Is there a public entrypoint in 'app/packages/core/public/' that you can use instead?
+Inference details: this is a reference to ::User which seems to be defined in app/packages/core/models/user.rb.
+To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+```
+
+So lets follow the suggestion and put `user` into core's public folder:
+``bash
+mkdir app/packages/core/public
+mv app/packages/core/models/users.rb app/packages/core/public/users.rb
+```
+
+Now when we check again
+
+`bin/packwerk check`
+
+Now we finally get a clean report:
+```log
+No offenses detected
+No stale violations detected
+```
+
+Cool, let's run our tests again and be sure all is still working!
+
+
+### Author Package
+
+Let's now make a space for authors to work with their articles
+
+```bash
+bin/rails g scaffold post content user:references
+```
+
+
+### Articles Package
+
+for public reading
 
 ------------
 
 ## Overview
+
+Hanami 2.x will use a structure like Packwerk and is built on dry-rb, which also has many intresting features and useful patterns.  When Hanami 2.x is released, a similar dependency checker like packwerk would be valuable.
+
+Currently with Rails one can achieve most of what Hanami 2.x framework offers with Packwerk and [dry-rails](https://github.com/dry-rb/dry-rails).
 
 ### Benefits
 
@@ -311,6 +554,18 @@ No stale violations detected
 -------------
 
 ## Resources
+
+For on organizing Ruby code via packages / modules
+
+### Hanami 2.x
+
+* [Hanami 2.x Code](https://github.com/hanami/hanami)
+* [Hanami 2.x Blog](https://hanamirb.org/blog/) - currently [Hanami 2.0 is in Beta](https://hanamirb.org/blog/2022/07/20/announcing-hanami-200beta1/) and is targeted for API usage (if you are willing to assemble all the parts Hanami 2.0 will also offers front-end services),  Hanami 2.1 will be focused on delivering a fully integrated full stack.
+* [dry-rb code](https://github.com/dry-rb)
+* [dry-rb Website](https://dry-rb.org/)
+* [rom-rb code](https://github.com/rom-rb/rom)
+* [rom-rb website](https://rom-rb.org/) - speed focus alternative to Rail's ActiveRecord.  While many ORMs focus on objects and state tracking, ROM focuses on data and transformations (a bit like Elixir's Ecto).  This project is heavily influenced by
+* [Hanami Mastery](https://hanamimastery.com/) - tutorials about dry-rb gems and Hanami 2.x concepts in order to help people coming from Rails to understand and use Hanami 2.x effectively.
 
 ### Modular Rails using Packwerk
 
