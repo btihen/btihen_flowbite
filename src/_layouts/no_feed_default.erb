@@ -2,14 +2,13 @@
 <html lang="<%= site.locale %>">
   <head>
     <%= render "head", metadata: site.metadata, title: resource.data.title %>
-    <%= feed_meta %>
   </head>
 
   <body class="<%= resource.data.layout %> <%= resource.data.page_class %>">
 
     <%= render Shared::Navbar.new(metadata: site.metadata, resource: resource) %>
-
     <!-- default -->
+
     <main>
       <div class="w-full bg-yellow-50">
         <section class="pt-12 relative">
@@ -18,7 +17,7 @@
               <div class="mx-auto relative w-10/12 mlg:w-8/12">
                 <h1><%= resource.data.title %></h1>
                 <!-- <h1 class="text-3xl font-extrabold leading-normal mt-0 mb-2"><%= resource.data.title %></h1> -->
-                <article class="pt-1 pb-6">
+                <article class="pt-1">
                   <%= yield %>
                 </article>
               </div>

@@ -9,9 +9,8 @@ paginate:
 ---
 
 <div class="grid gap-8 lg:grid-cols-2">
-  <%# publish_blogs = collections.posts.resources.select {|r| !!r.data.publish } %>
-  <% publish_blogs = paginator.resources %>
-  <% publish_blogs.each do |post| %>
+  <%# collections.posts.resources.select {|r| !!r.data.publish }.each do |post| %>
+  <% paginator.resources.each do |post| %>
     <article class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
       <div class="flex justify-between items-center mb-5 text-gray-700">
         <% post.data.categories.each do |category| %>
@@ -27,7 +26,7 @@ paginate:
         <%= post.data.title %></a>
       </h2>
       <p class="mb-5 font-light text-gray-700 dark:text-gray-400">
-        <%= post.data.summary %>
+        <%= post.data.excerpt %>
       </p>
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -36,33 +35,27 @@ paginate:
             Bill Tihen
           </span>
         </div>
-        <a href="<%= post.relative_url %>" class="inline-flex items-center font-medium text-primary-600 dark:text-primary-500 hover:underline">
-          Read
-          <svg class="ml-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd">
-            </path>
-          </svg>
+        <a href="<%= post.relative_url %>" class="px-4 py-2 text-sm text-black-700 no-underline bg-blue-200 rounded-full hover:bg-blue-300 hover:underline hover:text-black-700">
+          Read Article
         </a>
       </div>
     </article>
   <% end %>
 </div>
 
-<hr>
-
-<% if paginator.total_pages > 1 %>
-  <ul class="pagination">
-    <% if paginator.previous_page %>
-    <li>
-      <a href="<%= paginator.previous_page_path %>">Previous Page</a>
-    </li>
-    <% end %>
-    <% if paginator.next_page %>
-    <li>
-      <a href="<%= paginator.next_page_path %>">Next Page</a>
-    </li>
-    <% end %>
-  </ul>
-<% end %>
-
-If you have a lot of posts, you may want to consider adding [pagination](https://www.bridgetownrb.com/docs/content/pagination)!
+<div class="pt-6 pb-4 text-center">
+  <% if paginator.total_pages > 1 %>
+    <ul class="pagination">
+      <% if paginator.previous_page %>
+      <li>
+        <a href="<%= paginator.previous_page_path %>">Previous Page</a>
+      </li>
+      <% end %>
+      <% if paginator.next_page %>
+      <li>
+        <a href="<%= paginator.next_page_path %>">Next Page</a>
+      </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

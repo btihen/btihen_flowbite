@@ -33,3 +33,5 @@ gem "bridgetown-quick-search", "~> 1.1", :group => :bridgetown_plugins
 gem "bridgetown-seo-tag", "~> 5.0", :group => :bridgetown_plugins
 
 gem "bridgetown-sitemap", "~> 1.1", :group => :bridgetown_plugins
+
+gem "bridgetown-feed", "~> 2.1", :group => :bridgetown_plugins

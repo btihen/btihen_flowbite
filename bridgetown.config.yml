@@ -35,3 +35,6 @@ pagination:
 collections:
   posts:
     permalink: /:slug/:name/
+
+feed:
+  excerpt_only: true

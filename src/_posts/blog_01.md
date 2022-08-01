@@ -6,7 +6,7 @@ updated:   2022-06-24 19:59:53 +0200
 slug: ruby
 publish: true
 categories: ruby jamf website
-summary: Steps to build a Bridgetown Website / Blogsite
+excerpt: Steps to build a Bridgetown Website / Blogsite
 ---
 
 I wanted to play with some new web technologies and rebuild my website/blog with my own Design and make it human and machine searchable.

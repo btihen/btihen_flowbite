@@ -5,7 +5,7 @@ date:   2022-07-24 16:35:18 +0200
 categories: updates
 updated: 2022-07-20 01:59:53 +0200
 slug: ruby
-summary: basic features
+excerpt: basic features
 ---
 
 You’ll find this post in your `_posts` directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run `bridgetown serve`, which launches a web server and auto-regenerates your site when a file is updated.

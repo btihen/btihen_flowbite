@@ -6,21 +6,14 @@ updated:   2022-07-28 01:59:53 +0200
 slug: ruby
 publish: true
 categories: ruby jamf website
-summary: Steps to build a Bridgetown Website / Blogsite
+excerpt: Steps to build a Bridgetown Website / Blogsite
 ---
 
 I wanted to play with some new web technologies and rebuild my website/blog with my own Design and make it human and machine searchable.
 
 I decided to give Bridgetown a try - as I am familiar with Ruby and thought and wanted to get familiar with TailwindCSS.
 
-## Overview
-
-1. Download bridgetown gem
-2. Create a new Bridgetown project (Tailwind optional)
-3. Install Flowbite (optional - JS helpers for CSS)
-4. Website Layout (navbar, footer, page, posts, article)
-5. Configure Blog Articles
-6. CSS for Code Formatting
+----------
 
 ## Bridgetown Gem
 
@@ -28,6 +21,8 @@ First install bridgetown gem. (-N -- no documentation)
 ```bash
 gem install bridgetown -N
 ```
+
+----------
 
 ## Create a new Site
 
@@ -45,6 +40,8 @@ Let's start this and be sure we get the default starter page:
 bin/bridgetown start
 ```
 
+----------
+
 ## Site Metadata
 
 Set your site’s info in `src/_data/site_metadata.yml`.
@@ -55,6 +52,8 @@ This creates site-wide metadata variables so they’ll be easy to access and wil
 ```
 
 See [https://www.bridgetownrb.com/docs/datafiles](https://www.bridgetownrb.com/docs/datafiles) for examples setting up complex fixed data structures, team lists, etc.
+
+----------
 
 ## Add Flowbite
 
@@ -150,6 +149,8 @@ pre {
   padding: 0.75rem;
 }
 ```
+
+----------
 
 ## Website Layout
 
@@ -348,6 +349,8 @@ and
 </html>
 ```
 
+----------
+
 ## Static Pages (pages)
 
 Normal static pages can be in the root of the `src` folder, but I prefer to put them into `src/_pages` folder:
@@ -357,6 +360,8 @@ Everything in `src/_pages` _(or `src`)_ has the url `/file_name` -- for example:
 So now the structure looks like:
 
 ![folder image](/images/building_a_bridgetown_website/pages_structure.png)
+
+----------
 
 ## Blog Articles (collection)
 
@@ -370,7 +375,7 @@ date:   2022-06-11 19:59:53 +0200
 updated:   2022-07-21 01:59:53 +0200
 slug: ruby
 categories: ruby jamf website
-summary: Steps to build a Bridgetown Website / Blogsite
+excerpt: Steps to build a Bridgetown Website / Blogsite
 ---
 
 Giving Bridgetown a try and playing with web technologies ...
@@ -455,7 +460,7 @@ exclude_from_pagination: true
 slug: misc
 publish: false
 categories: updates
-summary: Sample Bridgtown Post
+excerpt: Sample Bridgtown Post
 ---
 
 You’ll find this post in your `_posts` directory.
@@ -540,7 +545,7 @@ paginate:
         <%%= post.data.title %></a>
       </h2>
       <p class="mb-5 font-light text-gray-700 dark:text-gray-400">
-        <%%= post.data.summary %>
+        <%%= post.data.excerpt %>
       </p>
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -578,8 +583,6 @@ paginate:
     <%% end %>
   </ul>
 <%% end %>
-
-If you have a lot of posts, you may want to consider adding [pagination](https://www.bridgetownrb.com/docs/content/pagination)!
 ```
 
 ### Code Formatting
@@ -701,7 +704,12 @@ NOTE: to show ERB files you must exscape the `<%%=` with a `<%%%=` for example:
 ```
 </code></pre>
 
+----------
+
 ## Plugins
+
+There are quite a few effective plugins that exent Bridgetown - with important features.
+I will cover a few I consider important.  The full list is found at: https://www.bridgetownrb.com/plugins
 
 ### Site Search
 
@@ -860,13 +868,68 @@ Be sure this works by going to: `http://localhost:4000/sitemap.xml`
 
 -------
 
-### Atom feed
+### Atom feed (for Blog)
 
 [https://github.com/bridgetownrb/bridgetown-feed](https://github.com/bridgetownrb/bridgetown-feed)
 
-### SVG inliner
 
-[https://github.com/ayushn21/bridgetown-svg-inliner](https://github.com/ayushn21/bridgetown-svg-inliner)
+Install the plugin with:
+
+```bash
+bundle add bridgetown-feed -g bridgetown_plugins
+```
+
+Now make a copy of `src/_layouts/default.erb` and call it `src/_layouts/no_feed_default.erb`
+
+Now update the 404.html page `src/_pages/404.html` to point to the no_feed_default.
+```html
+---
+permalink: /404.html
+layout: no_feed_default
+---
+
+<p>
+  <strong>Page not found :(</strong>
+  <br>
+  The requested page could not be found.
+</p>
+```
+
+Feel free to make this page nicer (add an image or whatever).
+
+Then place feed_meta someplace in your layout's `src/_layouts/default.erb` `<head>` section to output the necessary metadata.
+
+```ruby
+<!-- src/_layouts/default.erb -->
+<%%= feed_meta %>
+```
+
+OPTIONAL: I like the feed just to have the summary (exerpt) and not the full article content.  To do this add the following to `bridgetown.config.yml`:
+```yml
+feed:
+  excerpt_only: true
+```
+
+Now be sure its working by going to: `http://localhost:4000/feed.xml`
+
+This plugin uses the post's metadata:
+
+* date
+* title
+* excerpt
+* id
+* category
+* tags
+* image - URL of an image for the post (or the path)
+* author - The author of the post. Like the feed author, this can also be an object or a reference to an author in _data/authors.yml (see below).
+
+
+### Other Interesting Plugins
+
+* [SVG=Inliner](https://github.com/ayushn21/bridgetown-svg-inliner)
+* [GraphQL API](https://github.com/whitefusionhq/graphtown)
+
+--------
 
 ## Custom Fonts
 
@@ -957,6 +1020,7 @@ Let’s update the default layout to use Handlee for the text within the main bo
 ```
 Now both the Title and Body of each page (except blog articles) should be using the Handlee font.
 
+--------
 
 ## Deploy Bridgetown
 
@@ -982,9 +1046,11 @@ git push
 **Third**, connect your netlify account to the repo you just created.
 Four, click deploy within the netlify site (if it hasn’t already startet) and wait 5-10 mins (yes its kinda slow to deploy) and you should have your new website!
 
+---------
+
 ## Overview
 
-Overall, its a great, complete (albeit young) platform and will problably grow and become even better.
+Overall, its a great, complete (albeit young) platform and will problably grow and become even better. As a Rubiest, I find this easier to use than Hugo, Nuxt, Next, Svelte, etc.
 
 ### Positives
 
@@ -998,6 +1064,7 @@ Unlike Hugo, Gatsby, Next, Nuxt, ... there is to date no easy to use  CMS making
 
 The biggest drawback for me is that the Bridgetown errors are often missing, misleading or unspecific - sometimes no line number, sometimes not even the file.  I expect this will improve with time.
 
+------------
 
 ## Resources
 
@@ -1005,6 +1072,11 @@ The biggest drawback for me is that the Bridgetown errors are often missing, mis
 
 * [https://www.bridgetownrb.com/docs](https://www.bridgetownrb.com/docs)
 * [https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown](https://fpsvogel.com/posts/2021/build-a-blog-with-bridgetown)
+
+### Related
+
+* [Bridgetown Code / Ecosystem](https://github.com/bridgetownrb)
+* [maintained resources for BridgetownRB](https://github.com/bt-rb)
 
 ### Flowbite
 
