@@ -2,7 +2,7 @@
 layout: post
 title:  "Building a Bridgetown Website"
 date:   2022-06-11 01:59:53 +0200
-updated:   2022-07-28 01:59:53 +0200
+updated:   2022-08-01 01:59:53 +0200
 slug: ruby
 publish: true
 categories: ruby jamf website
@@ -928,6 +928,7 @@ This plugin uses the post's metadata:
 
 * [SVG=Inliner](https://github.com/ayushn21/bridgetown-svg-inliner)
 * [GraphQL API](https://github.com/whitefusionhq/graphtown)
+* [View Components](https://github.com/bridgetownrb/bridgetown-view-component) - [Bridegetown View Compnents Docs](https://www.bridgetownrb.com/docs/components/ruby#need-compatibility-with-rails-try-viewcomponent-experimental)
 
 --------
 

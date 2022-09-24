@@ -2,7 +2,8 @@
 layout: post
 title:  "Modular Rails using Packwerk"
 date:   2022-07-31 01:59:53 +0200
-updated:   2022-07-31 01:59:53 +0200
+updated:   2022-08-01 01:59:53 +0200
+image:
 slug: ruby
 publish: true
 categories: ruby modules citadel architechture
