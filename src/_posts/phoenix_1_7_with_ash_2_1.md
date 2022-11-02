@@ -985,3 +985,25 @@ Helpdesk.Support.Ticket
 |> Ash.Query.filter(status == :closed and not(contains(subject, "4")))
 |> Helpdesk.Support.read!()
 ```
+
+Kill your iex session and start a new one and we should still find all our records:
+```elixir
+iex -S mix
+
+# list all users:
+{:ok, users} = Helpdesk.Support.read(Helpdesk.Support.User)
+{:ok, tickets}= Helpdesk.Support.read(Helpdesk.Support.Ticket)
+```
+
+We should also be able to use the 'get' function using a known id:
+```elixir
+ticket_last = List.last(tickets)
+Helpdesk.Support.get(Helpdesk.Support.Ticket, ticket_last.id)
+```
+
+
+# Resources
+
+* https://www.youtube.com/watch?v=2U3vQHXCF0s
+* https://hexdocs.pm/ash/relationships.html#loading-related-data
+* https://www.ash-hq.org/docs/guides/ash/2.4.1/tutorials/get-started.md
