@@ -308,6 +308,18 @@ Possible aggregrates include:
 * sum
 * list
 
+Let's start with trying aggregates within queries:
+```elixir
+Helpdesk.Support.User
+|> Ash.Query.aggregate(:all_reported_tickets, [:reported_tickets])
+|> Helpdesk.Support.read!()
+
+Helpdesk.Support.User
+|> Ash.Query.aggregate(:all_reported_tickets, [:reported_tickets],
+                       filter: expr(status != :closed))
+|> Helpdesk.Support.read!()
+```
+
 The possible filters available are found at: https://hexdocs.pm/ash/Ash.Filter.html
 
 The basic aggregate format is `method :aggregate_name, :relationship_name`
@@ -415,8 +427,22 @@ Helpdesk.Support.load!(users, [:active_assigned_tickets, :closed_assigned_ticket
 
 ## Calculations
 
-We can do SQL calculations
+We can do SQL calculations too:
+```elixir
 
+Helpdesk.Support.User
+|> Ash.Query.calculate(:username, expr(name <> "-"))
+|> Helpdesk.Support.read!()
+
+# or mixed
+Helpdesk.Support.User
+|> Ash.Query.calculate(:username, expr(name <> "-"))
+|> Ash.Query.aggregate(:all_reported_tickets, [:reported_tickets],
+                       filter: expr(status != :closed))
+|> Helpdesk.Support.read!()
+```
+
+Pre-built calculations:
 ```elixir
 # lib/helpdesk/support/resources/user.ex
   calculations do
@@ -433,7 +459,7 @@ iex -S mix
 require Ash.Query
 
 Helpdesk.Support.User
-|> Ash.Query.filter(all_assigned_tickets > 0) # otherwise a divide by zero
+|> Ash.Query.filter(all_assigned_tickets > 0) # prevent divide by zero
 |> Ash.Query.filter(assigned_open_percent > 0.25)
 |> Ash.Query.sort(:assigned_open_percent)
 |> Ash.Query.load(:assigned_open_percent)
