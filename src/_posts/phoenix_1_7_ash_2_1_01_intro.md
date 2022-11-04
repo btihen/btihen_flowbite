@@ -9,52 +9,81 @@ categories: elixir phoenix ash
 excerpt: Overview and getting started with the Ash Framework
 ---
 
-I've been curious about the Elixir Ash Framework and had some time.  It looks like it helps create an application framework and has many pre-built common solutions.  Authorization, Queries, Application Structure, etc.
+I've been curious about the Elixir Ash Framework and with the current 'stable' release, I decided to spend part of my vacation to explore and hopefully learn Ash.
 
-As usual, I struggle with API documentation, and I love tutorials.  So I followed the instructions at:
-https://www.ash-hq.org/docs/guides/ash/2.4.1/tutorials/get-started.md#module-docs
-and integrated it with the slightly outdated Ash 1.x [slide notes](https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020?slide=16) from a 2020 ElixirConf talk by Zach Daniel called
-[Introduction to the Ash Framework](https://www.youtube.com/watch?v=2U3vQHXCF0s)
+When learning, I enjoy tutorials that demonstrate:
+* stepwise building an app (features within a context)
+* demonstrate integrations that are similar to 'real-world' usages
+I found this ElixirConf 2020 [Introduction to the Ash Framework](https://www.youtube.com/watch?v=2U3vQHXCF0s) video presentation by [Zach Daniel](https://github.com/zachdaniel) - the Ash Framework Author, which is what I was looking for, but its syntax and configuration is for Ash 1.x and not Ash 2.x.
 
-Here is what I had to do (learn and adjust) to get up and running.
+I will try to reproduce the flow of the video tutorial for Ash 2.x (with a few side adventures of my own).  I am using the [Ash Tutorials / Hex Docs](https://hexdocs.pm/ash/get-started.html) and the associated [talk slides](https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020) the [Ash Docs](https://ash-hq.org/docs/guides/ash/latest) are also very helpful.
+
+## Overview
+
+[Ash Framework](https://ash-hq.org/) is a declarative, resource-oriented application development framework for [Elixir](https://elixir-lang.org/). A resource can model anything, like a database table, an external API, or even custom code.
+
+Having played with Ash a bit now, it nicely separates the Data Layer and Business Logic, the Access APIs AND facilitates common needs / patterns, ie:
+* Validations & Constraints
+* Queries (aggregates, calculations)
+* Authentication (not yet authorization)
+* ...
+Without excluding standard elixir tooling.  I haven't tried this, but Ash claims to be easily extensible.
+
+Given the flexibility of Ash's uses of resources, we will start with a very simple organization (similar to rails - resources will reflect database tables that are directly acted upon.  Once the App gets a bit more complicated (and our resources get a annoyingly large), we will restructure the app to reflect a more modular approach.
+
+NOTE: A resource based app that separates the Data Layer, Business Logic and Access Layers is a new fresh approach, but takes a bit of rethinking.
+
+In the [Thinking Elixir Podcast # 123](https://podcast.thinkingelixir.com/123) Zach describes the design of Ash to be **Declarative Design** designed to preserve functional mindset and splits applications into two aspects.
+1. **Resources** - a description of attributes and what actions are allowed (what is required and what should happen)
+2. **Engine** - follow the instructions of the resource
+
+In my mind, I currently think of Ash as having three Layers (I don't yet have a good feel for the Engines).
+* External APIs - external access to data and actions (AshQuery, AshJsonAPI, AshGraphQL, AshPhoenix/LiveView)
+* Resources - a description of what should happen (actions allowed and the data required)
+* Data Layer - data persistence (in memory, ETS, Mnesia, PostgreSQL, etc)
+
+## Project
+
+Build and deploy a Simple Helpdesk Ticketing website.  This keeps this tutorial close to the Ash Documents and tutorials.  Thus we will install the Ash Framework within a Phoenix Project.
 
 ----------
 
 ## Install Phoenix (1.7)
 
-First I wanted to try out the unreleased version of Phoenix - so I followed the pre-release notes at:
-* https://github.com/phoenixframework/phoenix/blob/master/installer/README.md
-* https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020?slide=6
+First I let's install the unreleased version of Phoenix 1.7 by following these [instructions](https://github.com/phoenixframework/phoenix/blob/master/installer/README.md):
 ```bash
 mix archive.uninstall phx_new
 git clone https://github.com/phoenixframework/phoenix
 cd phoenix/installer
 MIX_ENV=prod mix do archive.build, archive.install
 cd ../..
-mix phx.new helpdesk_phx
-cd helpdesk_phx
+mix phx.new helpdesk
+cd helpdesk
 mix ecto.create
 git init
 git add .
 git commit -m "initial phoenix commit"
+iex -S mix phx.server
 ```
 
-Now we have a fully functional Phoenix site (that does nothing)
+Now we have a fully functional Phoenix site - with the new Phoenix Tailwind CSS design.
 
-----------
-
-Now let's include the Ash Framework with the goal of leaving Phoenix fully functional and adding Ash.
+![Phoenix 1.7 Start Page](/images/phoenix_ash_tutorial/phoenix_1_7.png)
 
 ## Add Ash (2.1)
 
-Let's start by adding Ash to the mix file:
+Now let's include the Ash Framework within Phoenix -- with the goal of leaving Phoenix completely standard and parallel to Ash.
+
+
+Start by adding Ash to the mix file:
 ```elixir
 # mix.exs
   defp deps do
     [
       {:ash, "~> 2.1"},
-      {:ash_phoenix, "~> 1.1"},
-      {:ash_postgres, "~> 1.0"},
+      # {:ash_postgres, "~> 1.0"},
+      # {:ash_graphql, "~> 0.21.0"},
+      # {:ash_phoenix, "~> 1.1"},
       # this is a nice touch too if using vs-code and ElixirLs
       {:elixir_sense, github: "elixir-lsp/elixir_sense", only: [:dev, :test]},
       # ...
@@ -66,8 +95,8 @@ and we can add these to our .formatter file too:
 ```elixir
 # .formatter.exs
 [
-  import_deps: [:ecto, :ecto_sql, :phoenix, :ash, :ash_postgres, :ash_postgres],
-  #                               add these ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  import_deps: [:ecto, :ecto_sql, :phoenix, :ash],
+  #                                add this ^^^^
   # ...
 ]
 ```
@@ -75,82 +104,33 @@ and we can add these to our .formatter file too:
 Now we need to install these dependencies (packages) with:
 ```bash
 mix deps.get
+iex -S mix phx.server
 ```
 
 ----------
 
 ## Building with Ash
 
-So let's build a `ticket support` system like they do in the tutorial.  We will need users and tickets.
+### Ash Structural Basics
 
-As best as I understand as is organized in `applications` or `modules` in this case `support`
+Our system will need users, tickets and comments.
 
-Within these `modules` we have `resources` (or models - in rails).
+We will start with a user resource.
 
-These `resources` will need to be `registered`.
-
-The `support.ex` file is like an `applicaton.ex` file in normal elixir projects.
-
-Lets start by building Tickets (and the necessary infrastructure `registry.ex` and `support.ex`):
+Ash needs to define its API and register its available resources - so we will create the following files:
 ```bash
-mkdir -p lib/helpdesk/support/resources && touch $_/ticket.ex
-touch lib/helpdesk/support/resources/user.ex
-touch lib/helpdesk/support/registry.ex
-touch lib/helpdesk/support.ex
+mkdir -p lib/support/resources
+touch lib/support/resources/user.ex
+touch lib/support/registry.ex
+touch lib/support/ash_api.ex
 ```
 
-### Resources (Ticket)
+### User Resource
 
-Resources are the core of an Ash Framework, they are like the `models` of rails - except they have MANY more facets: https://hexdocs.pm/ash/Ash.Resource.Dsl.html
-
-* [actions](https://hexdocs.pm/ash/Ash.Resource.Dsl.html#module-actions)
-* [attributes](https://hexdocs.pm/ash/Ash.Resource.Dsl.html#module-attributes)
-* [identities](https://hexdocs.pm/ash/Ash.Resource.Dsl.html#module-identities)
-* [validations](https://hexdocs.pm/ash/Ash.Resource.Dsl.html#module-validations)
-* relationships
-* aggregates
-* calculations
-* multitenancy
-* changes
-* code_interface
-* resource
-* preparations
-
-For now we will only introduce a few features
-
-We will start with the most basic possible setup (just tickets and no DB)
+A resource minimally needs actions (things to do) and attributes (information associated with the resource)
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-defmodule Helpdesk.Support.Ticket do
-  # This turns this module into a resource
-  use Ash.Resource
-
-  actions do
-    # basic actions - these are the building blocks for customized actions
-    defaults [:create, :read, :update, :destroy]
-  end
-
-  # Attributes are the simple pieces of data that exist on your resource
-  attributes do
-    # Add an autogenerated UUID primary key called `:id`.
-    uuid_primary_key :id
-    attribute :subject, :string
-  end
-end
-```
-
-We define what can happen within `actions` - hopefully this is clear that enables us to create, read, update and destroy these resources:
-```
-  actions do
-    defaults [:create, :read, :update, :destroy]
-  end
-```
-
-We define what the `resource` has for attributes in the `attributes` section.  In Rails these are the model's attributes.
-
-```elixir
-# lib/helpdesk/support/resources/user.ex
-defmodule Helpdesk.Support.User do
+# lib/support/resources/user.ex
+defmodule Support.User do
   use Ash.Resource
 
   actions do
@@ -162,99 +142,76 @@ defmodule Helpdesk.Support.User do
     # Add an autogenerated UUID primary key called `:id`.
     uuid_primary_key :id
 
-    attribute :first_name, :string do
-      constraints min_length: 1
-    end
-    attribute :last_name, :string do
-      constraints min_length: 1
-    end
-    attribute :admin, :boolean do
-      allow_nil? false
-      default false
-    end
-    attribute :representative, :boolean do
-      allow_nil? false
-      default false
-    end
-    attribute :email, :string do
-      allow_nil? false
-      constraints [
-        match: ~r/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$/
-      ]
-    end
-    # attribute :type, :atom do
-    #   constraints [
-    #     one_of: [:admin, :teacher, :student]
-    #   ]
-    # end
+    attribute :email, :string
+
+    attribute :first_name, :string
+    attribute :middle_name, :string
+    attribute :last_name, :string
+
+    attribute :admin, :boolean
+    attribute :account_type, :atom # will limit to :employee, :customer
+    attribute :department, :string
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
-
-  # provides a unique constraint - in order to uniquely identify the resource
-  identities do
-    identity :email, [:email]
-    identity :full_name, [:first_name, :last_name]
-  end
-
-  # ensure that at least first or last name is given
-  validations do
-    validate present([:first_name, :last_name], at_least: 1)
-  end
-
 end
 ```
 
-### Unique Identity
+The current `actions` (:create, :read, :update, :destroy) enable the basic CRUD operations used by the data layer.  We will expand and refine the actions soon.
 
-  identities do
-    identity :full_name, [:first_name, :last_name]
-    identity :email, [:email]
-  end
+The `attributes` are of course the associated information needed by the resource.  Notice there we are using several data types (:string, :boolean, :atom and :dates).  We will refine these attributes shortly and clearly define limits and contraints and validations on these data. See the [types](https://hexdocs.pm/ash/Ash.Type.html) docs for the full list available.
+
+Since we are new to Ash, let's be sure we haven't made any mistakes, let's start phoenix and be sure there are no compile errors:
+```elixir
+iex -S mix phx.server
+```
 
 ## Ash Registry
 
-I assume this keeps track of the resources we will be using.
-
+We need to register our resources with Ash (and any resource extensions - we will do this later). We can do this with a registry file:
 ```elixir
-# lib/helpdesk/support/registry.ex
-defmodule Helpdesk.Support.Registry do
-  use Ash.Registry,
-    extensions: [
-      # This extension adds helpful compile time validations
-      Ash.Registry.ResourceValidations
-    ]
+# lib/support/registry.ex
+defmodule Support.Registry do
+  use Ash.Registry
 
   entries do
-    entry Helpdesk.Support.Ticket
+    entry Support.User
   end
 end
 ```
 
-You can see this will allow us to add validations to our resources (later) in this case we have only registered `ticket` under the `entries`.
+Notice that the resource is registered in the `entries`.
 
-### Application API file
-
-This file defines the set of resources that can be used with this API (or more accurately, says where to find the resources to load).  This file is named after the name of the module - in this case `support.ex` (but I wonder why its not called `support_api.ex`).
-
+Again, let's test all is still well:
 ```elixir
-# lib/helpdesk/support.ex
-defmodule Helpdesk.Support do
+iex -S mix phx.server
+```
+
+### Ash API
+
+This file defines defines what APIs are associated with which resources.  We will build this out as we go too.
+```elixir
+# lib/support/ash_api.ex
+defmodule Support.AshApi do
   use Ash.Api
 
   resources do
-    # This defines the set of resources that can be used with this API
-    registry Helpdesk.Support.Registry
+    registry Support.Registry
   end
 end
 ```
-----------
 
-### Testing Ash (Tickets)
+Again, let's test all is still well:
+```elixir
+iex -S mix phx.server
+```
+
+### Usage
 
 Let's see if what we built actually works.
 
-We will create a 'ticket' resource and then query for it.
+Let's be sure we can create a 'user'.
 
 To do this we will need to:
 1. build a change-set for the create action (for the Ticket resource)
@@ -263,19 +220,32 @@ To do this we will need to:
 To do this we will test within iex:
 
 ```elixir
-iex -S mix
+iex -S mix phx.server
 
-Helpdesk.Support.Ticket
-|> Ash.Changeset.for_create(:create)
-|> Helpdesk.Support.create!()
+Support.User
+|> Ash.Changeset.for_create()
+|> Support.AshApi.create!()
 ```
 
+So to explain this:
+* we start with the desired resource
+* we build a changeset `for_create` a new user (in this case we aren't providing any data, yet)
+* finally, we invoke the `create` AshApi (within our Support app)
+
 Which hopefully returns something like:
-```bash
-#Helpdesk.Support.Ticket<
+```elixir
+#Support.User<
   __meta__: #Ecto.Schema.Metadata<:built, "">,
-  id: "bcc9729b-7fa2-4e7c-af45-3293be3394ee",
-  subject: nil,
+  id: "936ec1c0-cbde-4ba2-8726-e8288c081b1f",
+  first_name: nil,
+  middle_name: nil,
+  last_name: nil,
+  admin: nil,
+  email: nil,
+  department: nil,
+  account_type: nil,
+  inserted_at: ~U[2022-11-04 13:30:38.109136Z],
+  updated_at: ~U[2022-11-04 13:30:38.109136Z],
   aggregates: %{},
   calculations: %{},
   __order__: nil,
@@ -283,543 +253,390 @@ Which hopefully returns something like:
 >
 ```
 
-Notice that the subject is nil (we aren't yet using validations) and our primary key is a uuid.
+This tests our `create` action, let's test our `attributes` too.
+
+```elixir
+iex -S mix phx.server
+
+Support.User
+|> Ash.Changeset.for_create(
+    :create, %{first_name: "Nyima", last_name: "Sönam", admin: true, email: "nyima@example.com", account_type: :dog}
+  )
+|> Support.AshApi.create!()
+```
+
+Ideally, we now see that our attributes are filled with data we provided in the changeset.
+```elixir
+iex -S mix phx.server
+
+#Support.User<
+  __meta__: #Ecto.Schema.Metadata<:built, "">,
+  id: "ac5b9358-a8f6-42ba-8922-36880b834004",
+  first_name: "Nyima",
+  middle_name: nil,
+  last_name: "Sönam",
+  admin: true,
+  email: "nyima@example.com",
+  department: nil,
+  account_type: :dog,
+  inserted_at: ~U[2022-11-04 13:39:06.531902Z],
+  updated_at: ~U[2022-11-04 13:39:06.531902Z],
+  aggregates: %{},
+  calculations: %{},
+  __order__: nil,
+  ...
+>
+```
 
 ### Attribute Constraints
 
-Let's say we don't want to allow blank Subjects and we want to require a restricted list of statuses.
+Of course we probably want some control of the attributes.  We want to ensure some fields receive data or limits on this data - for example, we want limit the account types to :employee or :customer, the admin field by default should be false, and we definately need a first and last name, but not a middle name.
 
-To prevent blanks in a field we can change the attribute subject to look like:
-```elixir
-# lib/helpdesk/support/resources/ticket.ex
-# ...
-  attributes do
-    attribute :subject, :string do
-      allow_nil? false
-    end
-    # ...
-  end
-# ...
-```
+So let's add some added info to our attributes:
+* prevent nil attributes we use: `allow_nil? false`
+* to ensure a default value we use: `default :value`
+* to ensure a string is at least a few characters we use: `constraints min_length: integer`
+* to ensure we restrict the allowed values we can use: `constraints [one_of: [:value1, :value2]]`
 
-Now lets add a set of restricted statuses (new, open, closed):
+In our case, we can now update our user resource to:
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-# ...
-  attributes do
-    attribute :status, :atom do
-       constraints [one_of: [:new, :open, :closed]]
-       default :new
-       allow_nil? false
-     end
-    # ...
-  end
-# ...
-```
-
-Now the `ticket` file should look like:
-```elixir
-# lib/helpdesk/support/resources/ticket.ex
-defmodule Helpdesk.Support.Ticket do
-  # This turns this module into a resource
+# lib/support/resources/user.ex
+defmodule Support.User do
   use Ash.Resource
 
   actions do
-    # A set of simple actions.
     defaults [:create, :read, :update, :destroy]
   end
 
   # Attributes are the simple pieces of data that exist on your resource
   attributes do
-    # Add an autogenerated UUID primary key called `:id`.
     uuid_primary_key :id
 
-    # Add a string type attribute called `:subject`
-    attribute :subject, :string do
-      allow_nil? false # Don't allow `nil` values
+    attribute :email, :string do
+      allow_nil? false
+      constraints [
+        match: ~r/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$/
+      ]
     end
 
-    # status is either `open` or `closed`. We can add more statuses later
-    attribute :status, :atom do
-      # restricted list of statuses
-      constraints [one_of: [:new, :open, :closed]]
-      default :new # default value when none is given
-      allow_nil? false # Don't allow `nil` values
+    attribute :first_name, :string do
+      constraints min_length: 1
+      allow_nil? false
     end
+    attribute :middle_name, :string do
+      constraints min_length: 1
+    end
+    attribute :last_name, :string do
+      constraints min_length: 1
+      allow_nil? false
+    end
+
+    attribute :admin, :boolean do
+      allow_nil? false
+      default false
+    end
+    attribute :account_type, :atom do
+      constraints [
+        one_of: [:employee, :customer]
+      ]
+    end
+
+    attribute :department, :string
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 end
 ```
 
-### Custom Action
+Each `type` has its own `constraints`
 
-We want to create a custom `new` ticket action - that will only accept one attribute `subject` - which is also now required (per default all attributes will be accepted).
+[String Type](https://hexdocs.pm/ash/Ash.Type.String.html) for example I was delighted that by default leading and trailing spaces are trimmed with `trim?`
+
+[Atom Type](https://hexdocs.pm/ash/Ash.Type.Atom.html) - conveniently, have allow a constrain to a list of atom using the: `:one_of` constraint.
+
+**TESTEN**
 
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-# ...
-  actions do
-    # ...
-    create :new do
-      # By default all attributes are accepted by an action
-      accept [:subject] # This action should only accept the subject
-    end
-    # ...
-  end
-# ...
+iex -S mix phx.server
+
+Support.User
+|> Ash.Changeset.for_create(
+    :create, %{first_name: "Nyima", last_name: "Sönam", admin: true, email: "nyima@example.com", account_type: :dog}
+  )
+|> Support.AshApi.create!()
 ```
 
-We also want a `close` action:
+We should now get an error that :dog is not a valid account type, lets fix this:
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-# ...
-  actions do
-    # ...
-    update :close do
-      accept [] # accept no input here
-      change set_attribute(:status, :closed)
-    end
-    # ...
-  end
-# ...
+iex -S mix phx.server
+
+Support.User
+|> Ash.Changeset.for_create(
+    :create, %{first_name: "Nyima", last_name: "Sönam", admin: true, email: "nyima@example.com", account_type: :customer}
+  )
+|> Support.AshApi.create!()
+
+
+Support.User
+|> Ash.Changeset.for_create(
+    :create, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com", account_type: :employee}
+  )
+|> Support.AshApi.create!()
 ```
 
-Now the Ticket file should look like:
-```elixir
-# lib/helpdesk/support/resources/ticket.ex
-defmodule Helpdesk.Support.Ticket do
-  # This turns this module into a resource
-  use Ash.Resource
+Hmm - we can still create a customer as admin and employees without an employee title.  We can also create multiple accounts with the same email address, but at the moment we are not persisting our data, so we can't yet control for that.
 
-  actions do
-    # Add a set of simple actions. You'll customize these later.
-    defaults [:create, :read, :update, :destroy]
 
-    create :new do
-      accept [:subject] # only accept the subject - no other fields
-    end
+### Custom Actions
 
-    update :close do
-      accept [] # don't accept attributes
-      change set_attribute(:status, :closed) # build the change set
-    end
-  end
+CRUD is nice, but it is often nice to create an API that focuses on your business logic.  Custom [Actions](https://hexdocs.pm/ash/Ash.Resource.Actions.html) allow us to do that.
 
-    # Attributes are the simple pieces of data that exist on your resource
-  attributes do
-    # Add an autogenerated UUID primary key called `:id`.
-    uuid_primary_key :id
+We want to add a custom user `create` actions for 'customers', 'employees' and 'admins'.  Thus we will focus on [Create Actions](https://hexdocs.pm/ash/Ash.Resource.Actions.Create.html)
 
-    # Add a string type attribute called `:subject`
-    attribute :subject, :string do
-      allow_nil? false # Don't allow `nil` values
-    end
-
-    # status is either `open` or `closed`. We can add more statuses later
-    attribute :status, :atom do
-      # restricted list of statuses
-      constraints [one_of: [:new, :open, :closed]]
-      default :new # default value when none is given
-      allow_nil? false # Don't allow `nil` values
-    end
-  end
-end
-```
-
-To test this change we need to adjust our change set - if we don't we should get an error:
-```elixir
-iex -S mix
-# just in case iex is already open
-recompile()
-
-Helpdesk.Support.Ticket
-|> Ash.Changeset.for_create(:new)
-|> Helpdesk.Support.create!()
-
-# we should get the error:
-** (Ash.Error.Invalid) Input Invalid
-* attribute subject is required
-# ...
-```
-
-To properly create a Ticket now -- the following should work:
-```elixir
-iex -S mix
-# just in case iex is already open
-recompile()
-
-ticket = (
-  Helpdesk.Support.Ticket
-  |> Ash.Changeset.for_create(:new, %{subject: "My mouse won't click!"})
-  |> Helpdesk.Support.create!()
-)
-```
-we should get something like (notice we have a subject and it's status is `pending`):
-```elixir
-#Helpdesk.Support.Ticket<
-  __meta__: #Ecto.Schema.Metadata<:loaded, "tickets">,
-  id: "b792b4f1-2167-4aa8-b654-4aef4938ba9a",
-  subject: "My mouse won't click!",
-  status: :new,
-  # ...
-```
-
-Now let's test the `close` action on our new `ticket`:
-```elixir
-ticket
-|> Ash.Changeset.for_update(:close)
-|> Helpdesk.Support.update!()
-```
-
-Now our ticket should look like:
-```elixir
-#Helpdesk.Support.Ticket<
-  __meta__: #Ecto.Schema.Metadata<:loaded, "tickets">,
-  id: "ccd5af37-7cad-40c5-badd-71d5c67d50a5",
-  subject: "My mouse won't click!",
-  status: :closed,
-  # ...
-```
-
-Since we have no storage at the moment we can't query our records.
+NOTE: at the moment we have no data layer (persistence), so we can only create data.  To verify this try:
 
 Try:
 ```elixir
-Helpdesk.Support.read!(Helpdesk.Support.Ticket)
+iex -S mix phx.server
+
+Support.AshApi.read!(Support.User)
+# You should get an error - that says: 'there is no data to be read for that resource'
 ```
 
-You should get an error - that says: 'there is no data to be read for that resource'
-
-Let's enable queries - we need to configure a data layer for these resources
-
-## Ash Data Layer
-
-### Ash Queries - Simple Data Layer
-
-We can add a default `Simple` data layer with the macro: `require Ash.Query`, so if we create some tickets using the script:
+Let's start by just restricting what data can be submitted for various types of accounts. This will force the use of defaults - thus ensuring correct creation.
 
 ```elixir
-# Ash.Query is a macro, so it must be required
-require Ash.Query
+# lib/support/resources/user.ex
+# ...
+  actions do
+    # By default all attributes are accepted by an action
+    defaults [:create, :read, :update, :destroy]
 
-tickets =
-  for i <- 0..5 do
-    ticket =
-      Helpdesk.Support.Ticket
-      |> Ash.Changeset.for_create(:open, %{subject: "Issue #{i}"})
-      |> Helpdesk.Support.create!()
-
-    if rem(i, 2) == 0 do
-      ticket
-      |> Ash.Changeset.for_update(:close)
-      |> Helpdesk.Support.update!()
-    else
-      ticket
+    # By default all attributes are accepted by an action
+    create :new_customer do
+      # only allows the listed attributes
+      accept [:email, :first_name, :middle_name, :last_name]
+    end
+    create :new_employee do
+      # only allows the listed attributes
+      accept [:email, :first_name, :middle_name, :last_name, :department, :account_type]
+    end
+    create :new_admin do
+      # only allows the listed attributes
+      accept [:email, :first_name, :middle_name, :last_name, :department, :account_type, :admin]
     end
   end
+# ...
 ```
 
-Now we should be able to query and filter our tickets:
+To create a customer now -- the following should should help create a customer correctly:
 ```elixir
-# Show the tickets where the subject contains "2"
-Helpdesk.Support.Ticket
-|> Ash.Query.filter(contains(subject, "2"))
-|> Ash.DataLayer.Simple.set_data(tickets)
-|> Helpdesk.Support.read!()
+iex -S mix phx.server
+# just in case iex is already open
+recompile()
 
-# Show the tickets that are closed and their subject does not contain "4"
-Helpdesk.Support.Ticket
-|> Ash.Query.filter(status == :closed and not(contains(subject, "4")))
-|> Ash.DataLayer.Simple.set_data(tickets)
-|> Helpdesk.Support.read!()
+# should work
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(:new_customer, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com"})
+  |> Support.AshApi.create!()
+)
+# the custom action should prevent customers from becoming admins or employees
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(:new_customer, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com", admin: true})
+  |> Support.AshApi.create!()
+)
+# and get the error:
+** (Ash.Error.Invalid) Input Invalid
+
+* Invalid value provided for admin: cannot be changed.
 ```
-Notice the power of the `filter` command, try adjusting.
 
-To learn more visit:
-* [Ash Queries](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-query)
-* [Writing an Ash Filter](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-filter)
+## Data Layer (Persistance)
 
-
-## Ash Persistence (ETS)
+In order to read, update and generally execute queries we will add persistance.  We will start with an OTP based method using (ETS) in memory persistance.  In a separate tutorial we will switch to PostgreSQL.
 
 ETS is an in-memory (OTP based) way to persist data (we will work with PostgreSQL later).
 Once we have persisted data we can explore relationships.
 
 To add ETS to the Data Layer we need to change the line `use Ash.Resource` to:
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-  # ...
+# lib/support/resources/user.ex
+defmodule Support.User do
   use Ash.Resource,
     data_layer: Ash.DataLayer.Ets
   # ...
-```
-Now the file should look like:
-```elixir
-# lib/helpdesk/support/resources/ticket.ex
-defmodule Helpdesk.Support.Ticket do
-  # This turns this module into a resource
-  use Ash.Resource,
-    data_layer: Ash.DataLayer.Ets
-
-  actions do
-    # Add a set of simple actions. You'll customize these later.
-    defaults [:create, :read, :update, :destroy]
-
-    create :new do
-      accept [:subject] # only accept the subject - no other fields
-    end
-
-    update :close do
-      accept [] # don't accept attributes
-      change set_attribute(:status, :closed) # build the change set
-    end
-  end
-
-    # Attributes are the simple pieces of data that exist on your resource
-  attributes do
-    # Add an autogenerated UUID primary key called `:id`.
-    uuid_primary_key :id
-
-    # Add a string type attribute called `:subject`
-    attribute :subject, :string do
-      allow_nil? false # Don't allow `nil` values
-    end
-
-    # status is either `open` or `closed`. We can add more statuses later
-    attribute :status, :atom do
-      # restricted list of statuses
-      constraints [one_of: [:new, :open, :closed]]
-      default :new # default value when none is given
-      allow_nil? false # Don't allow `nil` values
-    end
-  end
 end
 ```
 
-### Ash Queries - Persistent Data Layer
+Lets try this out - we will create several user and then query for them.
+```elixir
+iex -S mix phx.server
+
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "nyima@example.com"}
+    )
+  |> Support.AshApi.create!()
+)
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
+                       department: "Office Actor", account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
+admin = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_admin, %{first_name: "Karma", last_name: "Sönam", email: "karma@example.com",
+                    department: "Office Admin", account_type: :employee, admin: true}
+    )
+  |> Support.AshApi.create!()
+)
+
+# now we should be able to 'read' all our users:
+Support.AshApi.read!(Support.User)
+```
+
+## Ash Queries
+
+Zach is clear that he was not interested in recreating something like Active Record.  [Ash Queries](https://hexdocs.pm/ash/Ash.Query.html) are quite flexible.  For now we will start with [filters](https://hexdocs.pm/ash/Ash.Filter.html), [sort](https://hexdocs.pm/ash/Ash.Query.html#sort/3) and [select](https://hexdocs.pm/ash/Ash.Query.html#select/3).  However, there are many [Query Functions](https://hexdocs.pm/ash/Ash.Query.html#functions) available -- including `sort`, `distinct`, `aggregate`, `calculate`, `limit`, `offset`, `subset_of`, etc (more or less any Query mechanism needed).  The nice thing is that this functions with all Data Layer, ETS, SQL, Mnesia, etc.
+
+To learn more visit:
+* [Ash Queries](https://hexdocs.pm/ash/Ash.Query.html)
+* [Ash Queries](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-query)
+* [Writing an Ash Filter](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-filter)
 
 ```elixir
-iex -S mix
-# and or
-recompile()
-
-# Actions (create & persist our records)
-for i <- 0..5 do
-  ticket =
-    Helpdesk.Support.Ticket
-    |> Ash.Changeset.for_create(:new, %{subject: "Issue #{i}"})
-    |> Helpdesk.Support.create!()
-
-  if rem(i, 2) == 0 do
-    ticket
-    |> Ash.Changeset.for_update(:close)
-    |> Helpdesk.Support.update!()
-  end
-end
-
-# QUERY Data
-# enable Ash Query (notice we no longer need to include the data layer in the query!)
 require Ash.Query
 
-# use `read` to list all users
-{:ok, users} = Helpdesk.Support.read(Helpdesk.Support.User)
-{:ok, tickets}= Helpdesk.Support.read(Helpdesk.Support.Ticket)
+# a simple 'read' returns ALL users:
+Support.AshApi.read!(Support.User)
 
-# use 'get' to get one record when you know the id
-ticket_last = List.last(tickets)
-Helpdesk.Support.get(Helpdesk.Support.Ticket, ticket_last.id)
+# we can sort the results with:
+Support.User
+|> Ash.Query.sort([last_name: :desc, first_name: :asc])
+|> Support.AshApi.read!()
 
+# we can limit our results to the first value - with a limit 1
+Support.User
+|> Ash.Query.sort([last_name: :desc, first_name: :asc])
+|> Ash.Query.limit(1)
+|> Support.AshApi.read!()
 
-# Show the tickets where the subject contains "2"
-Helpdesk.Support.Ticket
-|> Ash.Query.filter(contains(subject, "2"))
-|> Helpdesk.Support.read!()
+# with filter we can return users with 'Office' within the department
+Support.User
+|> Ash.Query.filter(contains(department, "Office"))
+|> Support.AshApi.read!()
 
-# Show the tickets that are closed and their subject does not contain "4"
-Helpdesk.Support.Ticket
-|> Ash.Query.filter(status == :closed and not(contains(subject, "4")))
-|> Helpdesk.Support.read!()
+# we can add multiple filters and build complex filters
+Support.User
+|> Ash.Query.filter(contains(department, "Office"))
+|> Ash.Query.filter(account_type == :employee and not(contains(department, "Admin")))
+|> Support.AshApi.read!()
+
+# we can limit what values are returned with select
+Support.User
+|> Ash.Query.filter(contains(department, "Office"))
+|> Ash.Query.filter(account_type == :employee and not(contains(department, "Admin")))
+|> Ash.Query.sort([last_name: :desc, first_name: :asc])
+|> Ash.Query.limit(1)
+|> Ash.Query.select([:first_name, :last_name])
+|> Support.AshApi.read!()
+# notice our return only contains id, first_name and last_name now
+[
+  #Support.User<
+    __meta__: #Ecto.Schema.Metadata<:loaded>,
+    id: "23bb05e1-936a-4dc6-94b4-a2123a37eb65",
+    email: nil,
+    first_name: "Nyima",
+    middle_name: nil,
+    last_name: "Sönam",
+    admin: nil,
+    account_type: nil,
+    department: nil,
+    inserted_at: nil,
+    updated_at: nil,
+    aggregates: %{},
+    calculations: %{},
+    __order__: nil,
+    ...
+  >
+]
 ```
 
-## Ash Relationships
+### Validations
 
-We will now create a `User` that can create or be assigned a ticket (using ETS as the data layer).
+It bothers me that I can't yet strictly enforce that emails must be unique and require a department for all employee accounts.
 
+Let's create some custom validations that accomplishes that.
+
+Validation Documentation is found here:
+* [Resource Validations](https://hexdocs.pm/ash/Ash.Resource.Validation.html)
+* [Module Docs](https://www.ash-hq.org/docs/module/ash/2.4.2/ash-resource-validation#module-docs)
+* [On Changes Tutorial](https://hexdocs.pm/ash/validate-changes.html)
+* [Built-In Validations](https://www.ash-hq.org/docs/module/ash/latest/ash-resource-validation-builtins#module-docs)
+
+In oder to do this we will need to allow use to add validation extensions `Ash.Registry.ResourceValidations` to Resources (easiest done in our Registry - which enables validations for all our resources -- more are coming):
 ```elixir
-# lib/helpdesk/support/resources/user.ex
-defmodule Helpdesk.Support.User do
-  # This turns this module into a resource
-  use Ash.Resource,
-    data_layer: Ash.DataLayer.Ets
-
-  actions do
-    defaults [:create, :read, :update, :destroy]
-  end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :name, :string
-  end
-
-  relationships do
-    has_many :assigned_tickets, Helpdesk.Support.Ticket do
-      destination_attribute :representative_id
-    end
-    has_many :reported_tickets, Helpdesk.Support.Ticket do
-      destination_attribute :reporter_id
-    end
-  end
-end
-```
-The `has_many` means that the destination attribute is not unique, meaning many related records could exist.
-
-
-We also need to register our new `user` resource by adding:
-```elixir
-# lib/helpdesk/support/registry.ex
-  entries do
-    # ...
-    entry Helpdesk.Support.User
-  end
-```
-
-So now our registry should look like:
-```elixir
-# lib/helpdesk/support/registry.ex
-defmodule Helpdesk.Support.Registry do
-  use Ash.Registry,
+# lib/support/registry.ex
+defmodule Support.Registry do
+  use Ash.Registry
     extensions: [
       Ash.Registry.ResourceValidations
     ]
 
   entries do
-    entry Helpdesk.Support.Ticket
-    entry Helpdesk.Support.User
+    entry Support.User
   end
 end
 ```
 
-Now we need to add the relationship to Tickets too:
+Now let's build our Custom Validation - the [document](https://hexdocs.pm/ash/Ash.Resource.Validation.html) suggestion is:
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-  # ...
-  relationships do
-    belongs_to :reporter, Helpdesk.Support.User
-    belongs_to :representative, Helpdesk.Support.User
+  validations do
+    validate {MyValidation, [foo: :bar]}
   end
-  # ...
 ```
-We use `belong_to` meaning that the destination attribute is unique, meaning only one related record could exist.
 
-Now we need to create additional 'actions' for ticket to manage the relationships:
+So to implement lets create `lib/support/user/validate_department.ex` and update `lib/support/resources/user.ex`.
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
-  actions do
-    # Add a set of simple actions. You'll customize these later.
-    defaults [:create, :read, :update, :destroy]
+# lib/support/user/validate_department.ex
+defmodule Support.User.ValidateEmployeeTitle do
+  def validate(%{account_type: :employee, department: nil} = resource) do
+    {:error, resource}
+  end
+end
 
-    create :new do
-      accept [:subject]
-
-      argument :reporter_id, :uuid do
-        allow_nil? false # This action requires reporter_id
-      end
-
-      change manage_relationship(:reporter_id, :reporter, type: :append_and_remove)
-    end
-
-    update :assign do
-      # No attributes should be accepted
-      accept []
-      # We accept a representative's id as input here
-      argument :representative_id, :uuid do
-        # This action requires representative_id
-        allow_nil? false
-      end
-      # We use a change here to replace the related representative
-      change manage_relationship(:representative_id, :representative, type: :append_and_remove)
-    end
-
-    update :start do
-      # No attributes should be accepted
-      accept []
-      # We accept a representative's id as input here
-      argument :representative_id, :uuid do
-        # This action requires representative_id
-        allow_nil? false
-      end
-      # We use a change here to replace the related representative
-      change manage_relationship(:representative_id, :representative, type: :append_and_remove)
-      change set_attribute(:status, :open)
-    end
-
-    update :close do
-      # We don't want to accept any input here
-      accept []
-      change set_attribute(:status, :closed)
-    end
-  # ...
+# lib/support/resources/user.ex
+  validations do
+    # validate {[:department, :account_type], Support.User.ValidateEmployeeTitle}
+    # validate present(:department, fn resource -> resource.account_type == :employee end)
+    # validate {Support.User.ValidateEmployeeTitle, :department, :account_type}
+    # validate present([:department]), if :account_type == :employee
+    # validate :department do
+    #   validate :present, on: fn resource -> resource.account_type == :employee end
+    # end
+  end
 ```
-
-We can learn more about managing ash relationships at: https://www.ash-hq.org/docs/module/ash/2.4.1/ash-resource-change-builtins#function-manage_relationship-3
-
-
-Testing Relationships:
+### Unique Identity
 ```elixir
-iex -S mix
-#
-recompile()
-
-# Create a reporter
-reporter = (
-  Helpdesk.Support.User
-  |> Ash.Changeset.for_create(:create, %{name: "Nyima Dog"})
-  |> Helpdesk.Support.create!()
-)
-
-# Open a ticket
-ticket = (
-  Helpdesk.Support.Ticket
-  |> Ash.Changeset.for_create(:new, %{subject: "I can't find my hand!", reporter_id: reporter.id})
-  |> Helpdesk.Support.create!()
-)
-
-# Create a representative
-representative_joe = (
-  Helpdesk.Support.User
-  |> Ash.Changeset.for_create(:create, %{name: "Joe"})
-  |> Helpdesk.Support.create!()
-)
-
-representative_jose = (
-  Helpdesk.Support.User
-  |> Ash.Changeset.for_create(:create, %{name: "Jose"})
-  |> Helpdesk.Support.create!()
-)
-
-# Assign that representative
-ticket = (
-  ticket
-  |> Ash.Changeset.for_update(:assign, %{representative_id: representative_joe.id})
-  |> Helpdesk.Support.update!()
-)
-
-# Start working on the Ticket
-ticket = (
-  ticket
-  |> Ash.Changeset.for_update(:start, %{representative_id: representative_jose.id})
-  |> Helpdesk.Support.update!()
-)
-
-# close the ticket
-ticket = (
-  ticket
-    |> Ash.Changeset.for_update(:close)
-    |> Helpdesk.Support.update!()
-)
+  identities do
+    identity :full_name, [:first_name, :last_name]
+    identity :email, [:email]
+  end
 ```
+
 
 # Resources
 
 * https://www.youtube.com/watch?v=2U3vQHXCF0s
 * https://hexdocs.pm/ash/relationships.html#loading-related-data
 * https://www.ash-hq.org/docs/guides/ash/2.4.1/tutorials/get-started.md
+* https://github.com/phoenixframework/phoenix/blob/master/installer/README.md
+* https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020?slide=6
