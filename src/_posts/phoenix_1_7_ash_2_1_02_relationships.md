@@ -9,16 +9,10 @@ categories: elixir phoenix ash
 excerpt: Adding Relationships into Ash Resources
 ---
 
-
-
-
-## Ash Relationships
-
-We will now create a `ticket` that can create or be assigned a ticket (using ETS as the data layer).
-
+In order to build relationships we will need more than one resource.  So lets quickly build the 'ticket' resource - also using ETS as the data layer (for now).  I won't explain the `actions` and `attributes` since that has already been covered in the [intro article](/elixir/phoenix_1_7_ash_2_1_02_relationships/).
 ```elixir
-# lib/helpdesk/support/resources/user.ex
-defmodule Helpdesk.Support.User do
+# lib/support/resources/ticket.ex
+defmodule Support.Ticket do
   # This turns this module into a resource
   use Ash.Resource,
     data_layer: Ash.DataLayer.Ets
@@ -29,32 +23,31 @@ defmodule Helpdesk.Support.User do
 
   attributes do
     uuid_primary_key :id
-    attribute :name, :string
-  end
 
-  relationships do
-    has_many :assigned_tickets, Helpdesk.Support.Ticket do
-      destination_attribute :representative_id
+    attribute :status, :atom do
+      constraints [one_of: [:new, :open, :closed]]
+      default :new
+      allow_nil? false
     end
-    has_many :reported_tickets, Helpdesk.Support.Ticket do
-      destination_attribute :reporter_id
+
+    attribute :priority, :atom do
+      constraints [one_of: [:low, :medium, :high]]
+      default :low
+      allow_nil? false
+    end
+
+    attribute :subject, :string do
+      allow_nil? false
+    end
+
+    attribute :description, :string do
+      allow_nil? false
     end
   end
 end
 ```
-The `has_many` means that the destination attribute is not unique, meaning many related records could exist.
 
-
-We also need to register our new `user` resource by adding:
-```elixir
-# lib/helpdesk/support/registry.ex
-  entries do
-    # ...
-    entry Helpdesk.Support.User
-  end
-```
-
-So now our registry should look like:
+Now we need to update the registry to include Ticket too:
 ```elixir
 # lib/helpdesk/support/registry.ex
 defmodule Helpdesk.Support.Registry do
@@ -64,27 +57,111 @@ defmodule Helpdesk.Support.Registry do
     ]
 
   entries do
-    entry Helpdesk.Support.Ticket
-    entry Helpdesk.Support.User
+    entry Support.Ticket
+    entry Support.User
   end
 end
 ```
 
-Now we need to add the relationship to Tickets too:
+
+## Ash Relationships
+
+### Belongs to
+
+The tickets will need a `relationship` section that points to the users - in this case we have two 'relationships':
+* a reporter (customers or employees)
+* a representative (only employees)
+that both point back to the same user 'resource'.  We use `belong_to` meaning that the destination attribute is unique, meaning only one related record could exist.
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
+# lib/support/resources/ticket.ex
   # ...
   relationships do
-    belongs_to :reporter, Helpdesk.Support.User
-    belongs_to :representative, Helpdesk.Support.User
+    belongs_to :reporter, Support.User
+    belongs_to :representative, Support.User
   end
   # ...
 ```
-We use `belong_to` meaning that the destination attribute is unique, meaning only one related record could exist.
+
+### Has many
+
+
+```elixir
+# lib/support/resources/user.ex
+  # ...
+  relationships do
+    # in a simple relationship this works if the other side references user_id
+    # has_many :tickets, Support.Ticket
+
+    # with overloaded references we need to declare the remote key
+    has_many :assigned_tickets, Support.Ticket do
+      destination_attribute :representative_id
+    end
+    has_many :reported_tickets, Support.Ticket do
+      destination_attribute :reporter_id
+    end
+  end
+  # ...
+```
+
+### Testing
+
+```elixir
+iex -S mix phx.server
+
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "nyima@example.com"}
+    )
+  |> Support.AshApi.create!()
+)
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
+                       department: "Office Actor", account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
+admin = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_admin, %{first_name: "Karma", last_name: "Sönam", email: "karma@example.com",
+                    department: "Office Admin", account_type: :employee, admin: true}
+    )
+  |> Support.AshApi.create!()
+)
+
+
+# Create new tickets
+ticket1 = (
+  Support.Ticket
+  |> Ash.Changeset.for_create(
+      :create, %{subject: "No Power", description: "nothing happens", reporter_id: customer.id}
+    )
+  |> Support.AshApi.create!()
+)
+
+ticket2 = (
+  Support.Ticket
+  |> Ash.Changeset.for_create(
+      :create, %{subject: "Screen Broken", description: "it has crack", status: :open,
+                 priority: :high, reporter_id: customer.id, representative_id: employee.id}
+    )
+  |> Support.AshApi.update!()
+)
+```
+
+### Aggregates
+
+
+## many_to_many ?
+
+### Custom Actions using Relationships
 
 Now we need to create additional 'actions' for ticket to manage the relationships:
 ```elixir
-# lib/helpdesk/support/resources/ticket.ex
+# lib/support/resources/ticket.ex
   actions do
     # Add a set of simple actions. You'll customize these later.
     defaults [:create, :read, :update, :destroy]
@@ -149,7 +226,7 @@ reporter = (
 )
 
 # Open a ticket
-ticket = (
+ticket1 = (
   Helpdesk.Support.Ticket
   |> Ash.Changeset.for_create(:new, %{subject: "I can't find my hand!", reporter_id: reporter.id})
   |> Helpdesk.Support.create!()
@@ -169,7 +246,7 @@ representative_jose = (
 )
 
 # Assign that representative
-ticket = (
+ticket2 = (
   ticket
   |> Ash.Changeset.for_update(:assign, %{representative_id: representative_joe.id})
   |> Helpdesk.Support.update!()

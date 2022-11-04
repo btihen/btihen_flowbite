@@ -512,11 +512,19 @@ To learn more visit:
 * [Ash Queries](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-query)
 * [Writing an Ash Filter](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-filter)
 
+### Critical Query Functions
+
 ```elixir
 require Ash.Query
 
 # a simple 'read' returns ALL users:
 Support.AshApi.read!(Support.User)
+
+# don't return duplicate emails
+Support.User
+|> Ash.Query.new()
+|> Ash.Query.distinct(query, :email)
+|> Support.AshApi.read!()
 
 # we can sort the results with:
 Support.User
@@ -569,6 +577,57 @@ Support.User
   >
 ]
 ```
+
+### Calculated Queries
+
+```elixir
+# lib/support/resources/user.ex
+# ...
+  calculations do
+    calculate :full_name, :string, expr(first_name <> " " <> last_name)
+    # calculate :formal_name, :string, expr(
+    #   last_name  <> ", " <> (
+    #                           [first_name, middle_name]
+    #                           |> Enum.map(fn string -> is_binary(string) end)
+    #                           |> Enum.join(" ")
+    #                         )
+    # )
+  end
+  # ...
+end
+```
+
+```elixir
+require Ash.Query
+
+# a simple 'read' returns ALL users:
+Support.AshApi.read!(Support.User)
+
+# we can sort the results with:
+Support.User
+|> Ash.Query.new()
+|> Ash.Query.calculate(full_name)
+|> Ash.Query.load([:full_name])
+|> Support.AshApi.read!()
+# you should get something like:
+[
+  #Support.User<
+    full_name: "Nyima Sönam",
+    aggregates: %{},
+    calculations: %{},
+    ...
+  >,
+...
+]
+
+# on the fly calculations - don't work, I must be overlooking something
+# Support.User
+# |> Ash.Query.new()
+# |> Ash.Query.calculate(:both_names, :string, expr(first_name <> " " <> last_name))
+# |> Ash.Query.load([:full_name])
+# |> Support.AshApi.read!()
+```
+
 
 ### Validations
 
