@@ -6,7 +6,7 @@ updated:   2022-08-01 01:59:53 +0200
 slug: elixir
 publish: true
 categories: elixir phoenix ash
-excerpt: Adding the JSON API to an Ash Project
+excerpt: Adding a GraphQL API to Ash
 ---
 Update the Support API file to:
 

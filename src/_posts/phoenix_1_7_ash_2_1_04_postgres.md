@@ -6,7 +6,7 @@ updated:   2022-08-01 01:59:53 +0200
 slug: elixir
 publish: true
 categories: elixir phoenix ash
-excerpt: Integrating PostgreSQL into the Ash Framework
+excerpt: Integrating Ash with PostgreSQL
 ---
 
 I've been curious about the Elixir Ash Framework and had some time.  It looks like it helps create an application framework and has many pre-built common solutions.  Authorization, Queries, Application Structure, etc.

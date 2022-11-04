@@ -6,7 +6,7 @@ updated:   2022-08-01 01:59:53 +0200
 slug: elixir
 publish: true
 categories: elixir phoenix ash
-excerpt: Overview and getting started with the Ash Framework
+excerpt: Adding Relationships into Ash Resources
 ---
 
 
