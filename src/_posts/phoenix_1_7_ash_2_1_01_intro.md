@@ -580,6 +580,9 @@ Support.User
 
 ### Calculated Queries
 
+[Calculated Queries](https://hexdocs.pm/ash/calculations.html) allow us the logic to extend our resources - and with SQL as the Data Layer, these will generate SQL to do the work instead of elixir code!
+
+The simplest way to create a calculation is to add it to the model - for example:
 ```elixir
 # lib/support/resources/user.ex
 # ...
@@ -597,13 +600,11 @@ Support.User
 end
 ```
 
+Then we can retrieve the calculation with the - 'calculate' and 'load' functions:
 ```elixir
 require Ash.Query
 
-# a simple 'read' returns ALL users:
-Support.AshApi.read!(Support.User)
-
-# we can sort the results with:
+# we can get the calculated resource field with - 'calculate' and 'load':
 Support.User
 |> Ash.Query.new()
 |> Ash.Query.calculate(full_name)
@@ -619,6 +620,22 @@ Support.User
   >,
 ...
 ]
+
+# calucated results can be sorted upon and otherwise used in the query
+Support.User
+|> Ash.Query.new()
+|> Ash.Query.calculate(full_name)
+|> Ash.Query.load([:full_name])
+|> Ash.Query.sort(full_name: :asc)
+|> Support.AshApi.read!()
+# you should get something like:
+[
+  #Support.User<
+    full_name: "Nyima Sönam",
+    aggregates: %{},
+    calculations: %{},
+    ...
+  >,
 
 # on the fly calculations - don't work, I must be overlooking something
 # Support.User
