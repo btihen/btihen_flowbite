@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Phoenix 1.7 with Ash 2.1 - Relationships"
+title:  "Phoenix 1.7 with Ash 2.1 - 02 Relationships"
 date:   2022-06-11 01:59:53 +0200
 updated:   2022-08-01 01:59:53 +0200
 slug: elixir
