@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Phoenix 1.7 with Ash 2.1 - 05 GraphQL"
-date:   2022-06-11 01:59:53 +0200
-updated:   2022-08-01 01:59:53 +0200
+title:  "Ash Framework 2.1 Tutorial - 06 GraphQL"
+date:   2022-11-04 01:59:53 +0200
+updated:   2022-11-05 01:59:53 +0200
 slug: elixir
 publish: true
 categories: elixir phoenix ash

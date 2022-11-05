@@ -1,12 +1,12 @@
 ---
 layout: post
-title:  "Phoenix 1.7 with Ash 2.1 - 01 Introduction"
-date:   2022-06-11 01:59:53 +0200
-updated:   2022-08-01 01:59:53 +0200
+title:  "Ash Framework 2.1 Tutorial - 01 Resources"
+date:   2022-11-04 01:59:53 +0200
+updated:   2022-11-05 01:59:53 +0200
 slug: elixir
 publish: true
 categories: elixir phoenix ash
-excerpt: Overview and getting started with the Ash Framework
+excerpt: Beginner's guide to the Ash framework - starting with resources
 ---
 
 I've been curious about the Elixir Ash Framework and with the current 'stable' release, I decided to spend part of my vacation to explore and hopefully learn Ash.
@@ -37,10 +37,11 @@ In the [Thinking Elixir Podcast # 123](https://podcast.thinkingelixir.com/123) Z
 1. **Resources** - a description of attributes and what actions are allowed (what is required and what should happen)
 2. **Engine** - follow the instructions of the resource
 
-In my mind, I currently think of Ash as having three Layers (I don't yet have a good feel for the Engines).
-* External APIs - external access to data and actions (AshQuery, AshJsonAPI, AshGraphQL, AshPhoenix/LiveView)
-* Resources - a description of what should happen (actions allowed and the data required)
-* Data Layer - data persistence (in memory, ETS, Mnesia, PostgreSQL, etc)
+However, I like to think of Ash as having four Layers:
+* **Engines** - The Ash engine handles the parallelization/running of requests to Ash.
+* **Application APIs** - external access to data and actions (AshActions, AshJsonAPI, AshGraphQL, etc)
+* **Resources** - a description of what should happen (actions allowed and the data required)
+* **Data Layer** - data persistence (in memory, ETS, Mnesia, PostgreSQL, etc)
 
 ## Project
 
@@ -288,7 +289,7 @@ iex -S mix phx.server
 >
 ```
 
-### Attribute Constraints
+### Attribute (input) Constraints
 
 Of course we probably want some control of the attributes.  We want to ensure some fields receive data or limits on this data - for example, we want limit the account types to :employee or :customer, the admin field by default should be false, and we definately need a first and last name, but not a middle name.
 
@@ -388,7 +389,187 @@ Support.User
 Hmm - we can still create a customer as admin and employees without an employee title.  We can also create multiple accounts with the same email address, but at the moment we are not persisting our data, so we can't yet control for that.
 
 
-### Custom Actions
+## Validations
+
+For data integrity may need to check relationships between attributes - for this we use validations:
+* all employees have a department name
+* all customers have NO department name
+* all admins are also employees
+
+Validation Documentation is found here:
+* [Resource Validations](https://hexdocs.pm/ash/Ash.Resource.Validation.html)
+* [Module Docs](https://www.ash-hq.org/docs/module/ash/2.4.2/ash-resource-validation#module-docs)
+* [On Changes Tutorial](https://hexdocs.pm/ash/validate-changes.html)
+* [Built-In Validations](https://www.ash-hq.org/docs/module/ash/latest/ash-resource-validation-builtins#module-docs)
+
+In oder to use validations we need to add the validation extensions to our Resources.  We do this in the file `lib/support/registry.ex` by adding `Ash.Registry.ResourceValidations` -- so now the registry file should look like:
+```elixir
+# lib/support/registry.ex
+defmodule Support.Registry do
+  use Ash.Registry,
+    extensions: [
+      Ash.Registry.ResourceValidations
+    ]
+
+  entries do
+    entry Support.User
+  end
+end
+```
+
+[Validation Documentation](https://hexdocs.pm/ash/Ash.Resource.Validation.html), lists a few examples.  We will use the following validations (and explain and test them in detail below).
+```elixir
+# lib/support/resources/user.ex
+  validations do
+    validate absent([:department_name]), where: attribute_equals(:account_type, :customer)
+    validate present([:department_name]), where: attribute_equals(:account_type, :employee)
+    validate attribute_equals(:account_type, :employee), where: attribute_equals(:admin, true), on: [:create, :update]
+  end
+```
+
+
+### Validate Attribute Equals
+
+To ensures an attribute must have a give value under the given requirements.  In our case, we want to ensure the `account_type` is `:employee` when we have an 'admin' account. Thus we will use the `attribute_equals` function when we have an 'employee' account.
+```elixir
+# lib/support/resources/user.ex
+  validations do
+    validate attribute_equals(:account_type, :employee), where: attribute_equals(:admin, true)
+  end
+```
+
+```elixir
+iex -S mix phx.server
+
+admin = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com", admin: true}
+    )
+  |> Support.AshApi.create!()
+)
+# we should get this error
+** (Ash.Error.Invalid) Input Invalid
+
+* Invalid value provided for account_type: must equal employee.
+```
+
+I don't find this message quite clear enough, so let's add a custom error message with:
+```elixir
+# lib/support/resources/user.ex
+  validations do
+    validate attribute_equals(:account_type, :employee),
+             where: attribute_equals(:admin, true),
+             message: "Accounts with admin privileges must be employee accounts"
+  end
+```
+
+```elixir
+iex -S mix phx.server
+
+admin = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com", admin: true}
+    )
+  |> Support.AshApi.create!()
+)
+# Now we get this new error - which is hopefully a little clearer
+** (Ash.Error.Invalid) Input Invalid
+
+* Invalid value provided for account_type: Accounts with admin privileges must be employee accounts.
+
+# now let's verify a properly created admin account should still works
+admin = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
+                       department_name: "Office Actor", account_type: :employee, admin: true}
+    )
+  |> Support.AshApi.create!()
+)
+```
+
+
+### Validate Attribute Absent
+
+Ensures an Attribute must be absent under the given requirements.  In our case, we want to ensure the `department_name` is empty when we have a customer account.  So we will use the `absent` function.  To restrict this to just customer accounts we will add a `where:` option.  We could also list specific actions we want to use this with the `on:` option -- for example `on: [:create, :update, :new_customer]` actions.  The absent function takes a list of attributes - in our case we only want to check one.
+```elixir
+# lib/support/resources/user.ex
+  validations do
+    validate absent([:department_name]), where: attribute_equals(:account_type, :customer),
+                                         on: [:create, :update, :new_customer]
+  end
+```
+
+Lets try this out - we will create several user and then query for them.
+```elixir
+iex -S mix phx.server
+
+# test department_name is absent
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com",
+                 department_name: "Office Actor", account_type: :customer}
+    )
+  |> Support.AshApi.create!()
+)
+# now we should expect the following error
+** (Ash.Error.Invalid) Input Invalid
+
+* department_name: must be absent.
+
+# but this should still work
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com"}
+    )
+  |> Support.AshApi.create!()
+)
+```
+
+### Validate Attribute Present
+
+Ensures an Attribute must be absent under the given requirements.  In our case, we want to ensure the `department_name` is present when we have an employee account. Thus we will use the `present` function when we have an 'employee' account. The present function takes a list of attributes - in our case we only want to check one attribute.
+```elixir
+# lib/support/resources/user.ex
+  validations do
+    validate present([:department_name]), where: attribute_equals(:account_type, :employee)
+  end
+```
+
+Lets test this and see what the error looks like.
+```elixir
+iex -S mix phx.server
+
+# using just :create to be we can accept all attributes
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
+                 account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
+# we should get this error
+** (Ash.Error.Invalid) Input Invalid
+
+* Invalid value provided for department_name: must be present.
+
+# now with department name on an employee account we should get a valid record
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
+                 account_type: :employee, department_name: "Office Actor"}
+    )
+  |> Support.AshApi.create!()
+)
+```
+
+## Custom Actions
 
 CRUD is nice, but it is often nice to create an API that focuses on your business logic.  Custom [Actions](https://hexdocs.pm/ash/Ash.Resource.Actions.html) allow us to do that.
 
@@ -436,12 +617,6 @@ iex -S mix phx.server
 # just in case iex is already open
 recompile()
 
-# should work
-customer = (
-  Support.User
-  |> Ash.Changeset.for_create(:new_customer, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com"})
-  |> Support.AshApi.create!()
-)
 # the custom action should prevent customers from becoming admins or employees
 customer = (
   Support.User
@@ -452,360 +627,14 @@ customer = (
 ** (Ash.Error.Invalid) Input Invalid
 
 * Invalid value provided for admin: cannot be changed.
-```
 
-## Data Layer (Persistance)
-
-In order to read, update and generally execute queries we will add persistance.  We will start with an OTP based method using (ETS) in memory persistance.  In a separate tutorial we will switch to PostgreSQL.
-
-ETS is an in-memory (OTP based) way to persist data (we will work with PostgreSQL later).
-Once we have persisted data we can explore relationships.
-
-To add ETS to the Data Layer we need to change the line `use Ash.Resource` to:
-```elixir
-# lib/support/resources/user.ex
-defmodule Support.User do
-  use Ash.Resource,
-    data_layer: Ash.DataLayer.Ets
-  # ...
-end
-```
-
-Lets try this out - we will create several user and then query for them.
-```elixir
-iex -S mix phx.server
-
+# should work
 customer = (
   Support.User
-  |> Ash.Changeset.for_create(
-      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "nyima@example.com"}
-    )
-  |> Support.AshApi.create!()
-)
-employee = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
-                       department_name: "Office Actor", account_type: :employee}
-    )
-  |> Support.AshApi.create!()
-)
-admin = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_admin, %{first_name: "Karma", last_name: "Sönam", email: "karma@example.com",
-                    department_name: "Office Admin", account_type: :employee, admin: true}
-    )
-  |> Support.AshApi.create!()
-)
-
-# now we should be able to 'read' all our users:
-Support.AshApi.read!(Support.User)
-```
-
-## Ash Queries
-
-Zach is clear that he was not interested in recreating something like Active Record.  [Ash Queries](https://hexdocs.pm/ash/Ash.Query.html) are quite flexible.  For now we will start with [filters](https://hexdocs.pm/ash/Ash.Filter.html), [sort](https://hexdocs.pm/ash/Ash.Query.html#sort/3) and [select](https://hexdocs.pm/ash/Ash.Query.html#select/3).  However, there are many [Query Functions](https://hexdocs.pm/ash/Ash.Query.html#functions) available -- including `sort`, `distinct`, `aggregate`, `calculate`, `limit`, `offset`, `subset_of`, etc (more or less any Query mechanism needed).  The nice thing is that this functions with all Data Layer, ETS, SQL, Mnesia, etc.
-
-To learn more visit:
-* [Ash Queries](https://hexdocs.pm/ash/Ash.Query.html)
-* [Ash Queries](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-query)
-* [Writing an Ash Filter](https://www.ash-hq.org/docs/module/ash/2.4.1/ash-filter)
-
-### Critical Query Functions
-
-```elixir
-require Ash.Query
-
-# a simple 'read' returns ALL users:
-Support.AshApi.read!(Support.User)
-
-# don't return duplicate emails
-Support.User
-|> Ash.Query.new()
-|> Ash.Query.distinct(query, :email)
-|> Support.AshApi.read!()
-
-# we can sort the results with:
-Support.User
-|> Ash.Query.sort([last_name: :desc, first_name: :asc])
-|> Support.AshApi.read!()
-
-# we can limit our results to the first value - with a limit 1
-Support.User
-|> Ash.Query.sort([last_name: :desc, first_name: :asc])
-|> Ash.Query.limit(1)
-|> Support.AshApi.read!()
-
-# with filter we can return users with 'Office' within the department_name
-Support.User
-|> Ash.Query.filter(contains(department_name, "Office"))
-|> Support.AshApi.read!()
-
-# we can add multiple filters and build complex filters
-Support.User
-|> Ash.Query.filter(contains(department_name, "Office"))
-|> Ash.Query.filter(account_type == :employee and not(contains(department_name, "Admin")))
-|> Support.AshApi.read!()
-
-# we can limit what values are returned with select
-Support.User
-|> Ash.Query.filter(contains(department_name, "Office"))
-|> Ash.Query.filter(account_type == :employee and not(contains(department_name, "Admin")))
-|> Ash.Query.sort([last_name: :desc, first_name: :asc])
-|> Ash.Query.limit(1)
-|> Ash.Query.select([:first_name, :last_name])
-|> Support.AshApi.read!()
-# notice our return only contains id, first_name and last_name now
-[
-  #Support.User<
-    __meta__: #Ecto.Schema.Metadata<:loaded>,
-    id: "23bb05e1-936a-4dc6-94b4-a2123a37eb65",
-    email: nil,
-    first_name: "Nyima",
-    middle_name: nil,
-    last_name: "Sönam",
-    admin: nil,
-    account_type: nil,
-    department_name: nil,
-    inserted_at: nil,
-    updated_at: nil,
-    aggregates: %{},
-    calculations: %{},
-    __order__: nil,
-    ...
-  >
-]
-```
-
-### Calculated Queries
-
-[Calculated Queries](https://hexdocs.pm/ash/calculations.html) allow us the logic to extend our resources - and with SQL as the Data Layer, these will generate SQL to do the work instead of elixir code!
-
-The simplest way to create a calculation is to add it to the model - for example:
-```elixir
-# lib/support/resources/user.ex
-# ...
-  calculations do
-    calculate :full_name, :string, expr(first_name <> " " <> last_name)
-    # calculate :formal_name, :string, expr(
-    #   last_name  <> ", " <> (
-    #                           [first_name, middle_name]
-    #                           |> Enum.map(fn string -> is_binary(string) end)
-    #                           |> Enum.join(" ")
-    #                         )
-    # )
-  end
-  # ...
-end
-```
-
-Then we can retrieve the calculation with the - 'calculate' and 'load' functions:
-```elixir
-require Ash.Query
-
-# we can get the calculated resource field with - 'calculate' and 'load':
-Support.User
-|> Ash.Query.new()
-|> Ash.Query.calculate(full_name)
-|> Ash.Query.load([:full_name])
-|> Support.AshApi.read!()
-# you should get something like:
-[
-  #Support.User<
-    full_name: "Nyima Sönam",
-    aggregates: %{},
-    calculations: %{},
-    ...
-  >,
-...
-]
-
-# calucated results can be sorted upon and otherwise used in the query
-Support.User
-|> Ash.Query.new()
-|> Ash.Query.calculate(full_name)
-|> Ash.Query.load([:full_name])
-|> Ash.Query.sort(full_name: :asc)
-|> Support.AshApi.read!()
-# you should get something like:
-[
-  #Support.User<
-    full_name: "Nyima Sönam",
-    aggregates: %{},
-    calculations: %{},
-    ...
-  >,
-
-# on the fly calculations - don't work, I must be overlooking something
-# Support.User
-# |> Ash.Query.new()
-# |> Ash.Query.calculate(:both_names, :string, expr(first_name <> " " <> last_name))
-# |> Ash.Query.load([:full_name])
-# |> Support.AshApi.read!()
-```
-
-
-### Validations
-
-It bothers me that I can't yet strictly enforce that emails must be unique and require a department_name for all employee accounts.
-
-Let's create some custom validations that accomplishes that.
-
-Validation Documentation is found here:
-* [Resource Validations](https://hexdocs.pm/ash/Ash.Resource.Validation.html)
-* [Module Docs](https://www.ash-hq.org/docs/module/ash/2.4.2/ash-resource-validation#module-docs)
-* [On Changes Tutorial](https://hexdocs.pm/ash/validate-changes.html)
-* [Built-In Validations](https://www.ash-hq.org/docs/module/ash/latest/ash-resource-validation-builtins#module-docs)
-
-In oder to do this we will need to allow use to add validation extensions `Ash.Registry.ResourceValidations` to Resources (easiest done in our Registry - which enables validations for all our resources -- more are coming):
-```elixir
-# lib/support/registry.ex
-defmodule Support.Registry do
-  use Ash.Registry
-    extensions: [
-      Ash.Registry.ResourceValidations
-    ]
-
-  entries do
-    entry Support.User
-  end
-end
-```
-
-#### Absent
-
-Attribute must be absent
-
-Now let's build our Custom Validation - the [document](https://hexdocs.pm/ash/Ash.Resource.Validation.html), to do this we add a present validation with a where clause that tests for our specific conditions.
-```elixir
-# lib/support/resources/user.ex
-  validations do
-    validate absent([:department_name]), where: attribute_equals(:account_type, :customer)
-    validate present([:department_name]), where: attribute_equals(:account_type, :employee), on: [:create, :update]
-    validate attribute_equals(:account_type, :employee), where: attribute_equals(:admin, true)
-  end
-```
-
-
-Lets try this out - we will create several user and then query for them.
-```elixir
-iex -S mix phx.server
-
-# test department_name is absent
-customer = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :create, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com",
-                 department_name: "Office Actor", account_type: :customer}
-    )
-  |> Support.AshApi.create!()
-)
-# now we should expect the following error
-** (Ash.Error.Invalid) Input Invalid
-
-* department_name: must be absent.
-
-# but this should still work
-customer = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com"}
-    )
+  |> Ash.Changeset.for_create(:new_customer, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com"})
   |> Support.AshApi.create!()
 )
 ```
-
-#### Present
-
-Attribute must be present
-
-```elixir
-iex -S mix phx.server
-
-employee = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
-                       department_name: "Office Actor", account_type: :employee}
-    )
-  |> Support.AshApi.create!()
-)
-# we should get this error
-** (Ash.Error.Invalid) Input Invalid
-
-* email: has already been taken.
-
-
-employee = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
-                       department_name: "Office Actor", account_type: :employee}
-    )
-  |> Support.AshApi.create!()
-)
-admin = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_admin, %{first_name: "Karma", last_name: "Sönam", email: "karma@example.com",
-                    department_name: "Office Admin", account_type: :employee, admin: true}
-    )
-  |> Support.AshApi.create!()
-)
-```
-
-#### Attribute Equals
-
-
-
-### Uniqueness (Identity)
-
-In order to ensure that the email is a unique identifier - we use the `identities` feature.  Unfortunately, this feature behaves differently depending on the Data Layer in use.  In particular, from the docs, we see
-  Ash.DataLayer.Ets will actually require you to set pre_check_with since the ETS data layer has no built in support for unique constraints.
-
-In order to
-```elixir
-  identities do
-    identity :email, [:email], pre_check_with: Support.AshApi
-    identity :full_name, [:first_name, :middle_name, :last_name], pre_check_with: Support.AshApi
-  end
-```
-
-```elixir
-iex -S mix phx.server
-
-customer = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com"}
-    )
-  |> Support.AshApi.create!()
-)
-employee = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
-                       department_name: "Office Actor", account_type: :employee}
-    )
-  |> Support.AshApi.create!()
-)
-# we should get this error
-** (Ash.Error.Invalid) Input Invalid
-
-* email: has already been taken.
-
-# But the following should work
-employee = (
-  Support.User
-  |> Ash.Changeset.for_create(
-      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
-                       department_name: "Office Actor", account_type: :employee}
-    )
-  |> Support.AshApi.create!()
-)
-```
-
 
 # Resources
 
