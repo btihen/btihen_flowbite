@@ -150,7 +150,7 @@ defmodule Support.User do
 
     attribute :admin, :boolean
     attribute :account_type, :atom # will limit to :employee, :customer
-    attribute :department, :string
+    attribute :department_name, :string
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
@@ -242,7 +242,7 @@ Which hopefully returns something like:
   last_name: nil,
   admin: nil,
   email: nil,
-  department: nil,
+  department_name: nil,
   account_type: nil,
   inserted_at: ~U[2022-11-04 13:30:38.109136Z],
   updated_at: ~U[2022-11-04 13:30:38.109136Z],
@@ -277,7 +277,7 @@ iex -S mix phx.server
   last_name: "Sönam",
   admin: true,
   email: "nyima@example.com",
-  department: nil,
+  department_name: nil,
   account_type: :dog,
   inserted_at: ~U[2022-11-04 13:39:06.531902Z],
   updated_at: ~U[2022-11-04 13:39:06.531902Z],
@@ -341,7 +341,7 @@ defmodule Support.User do
       ]
     end
 
-    attribute :department, :string
+    attribute :department_name, :string
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
@@ -420,11 +420,11 @@ Let's start by just restricting what data can be submitted for various types of 
     end
     create :new_employee do
       # only allows the listed attributes
-      accept [:email, :first_name, :middle_name, :last_name, :department, :account_type]
+      accept [:email, :first_name, :middle_name, :last_name, :department_name, :account_type]
     end
     create :new_admin do
       # only allows the listed attributes
-      accept [:email, :first_name, :middle_name, :last_name, :department, :account_type, :admin]
+      accept [:email, :first_name, :middle_name, :last_name, :department_name, :account_type, :admin]
     end
   end
 # ...
@@ -486,7 +486,7 @@ employee = (
   Support.User
   |> Ash.Changeset.for_create(
       :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
-                       department: "Office Actor", account_type: :employee}
+                       department_name: "Office Actor", account_type: :employee}
     )
   |> Support.AshApi.create!()
 )
@@ -494,7 +494,7 @@ admin = (
   Support.User
   |> Ash.Changeset.for_create(
       :new_admin, %{first_name: "Karma", last_name: "Sönam", email: "karma@example.com",
-                    department: "Office Admin", account_type: :employee, admin: true}
+                    department_name: "Office Admin", account_type: :employee, admin: true}
     )
   |> Support.AshApi.create!()
 )
@@ -537,21 +537,21 @@ Support.User
 |> Ash.Query.limit(1)
 |> Support.AshApi.read!()
 
-# with filter we can return users with 'Office' within the department
+# with filter we can return users with 'Office' within the department_name
 Support.User
-|> Ash.Query.filter(contains(department, "Office"))
+|> Ash.Query.filter(contains(department_name, "Office"))
 |> Support.AshApi.read!()
 
 # we can add multiple filters and build complex filters
 Support.User
-|> Ash.Query.filter(contains(department, "Office"))
-|> Ash.Query.filter(account_type == :employee and not(contains(department, "Admin")))
+|> Ash.Query.filter(contains(department_name, "Office"))
+|> Ash.Query.filter(account_type == :employee and not(contains(department_name, "Admin")))
 |> Support.AshApi.read!()
 
 # we can limit what values are returned with select
 Support.User
-|> Ash.Query.filter(contains(department, "Office"))
-|> Ash.Query.filter(account_type == :employee and not(contains(department, "Admin")))
+|> Ash.Query.filter(contains(department_name, "Office"))
+|> Ash.Query.filter(account_type == :employee and not(contains(department_name, "Admin")))
 |> Ash.Query.sort([last_name: :desc, first_name: :asc])
 |> Ash.Query.limit(1)
 |> Ash.Query.select([:first_name, :last_name])
@@ -567,7 +567,7 @@ Support.User
     last_name: "Sönam",
     admin: nil,
     account_type: nil,
-    department: nil,
+    department_name: nil,
     inserted_at: nil,
     updated_at: nil,
     aggregates: %{},
@@ -648,7 +648,7 @@ Support.User
 
 ### Validations
 
-It bothers me that I can't yet strictly enforce that emails must be unique and require a department for all employee accounts.
+It bothers me that I can't yet strictly enforce that emails must be unique and require a department_name for all employee accounts.
 
 Let's create some custom validations that accomplishes that.
 
@@ -673,39 +673,137 @@ defmodule Support.Registry do
 end
 ```
 
-Now let's build our Custom Validation - the [document](https://hexdocs.pm/ash/Ash.Resource.Validation.html) suggestion is:
-```elixir
-  validations do
-    validate {MyValidation, [foo: :bar]}
-  end
-```
+#### Absent
 
-So to implement lets create `lib/support/user/validate_department.ex` and update `lib/support/resources/user.ex`.
-```elixir
-# lib/support/user/validate_department.ex
-defmodule Support.User.ValidateEmployeeTitle do
-  def validate(%{account_type: :employee, department: nil} = resource) do
-    {:error, resource}
-  end
-end
+Attribute must be absent
 
+Now let's build our Custom Validation - the [document](https://hexdocs.pm/ash/Ash.Resource.Validation.html), to do this we add a present validation with a where clause that tests for our specific conditions.
+```elixir
 # lib/support/resources/user.ex
   validations do
-    # validate {[:department, :account_type], Support.User.ValidateEmployeeTitle}
-    # validate present(:department, fn resource -> resource.account_type == :employee end)
-    # validate {Support.User.ValidateEmployeeTitle, :department, :account_type}
-    # validate present([:department]), if :account_type == :employee
-    # validate :department do
-    #   validate :present, on: fn resource -> resource.account_type == :employee end
-    # end
+    validate absent([:department_name]), where: attribute_equals(:account_type, :customer)
+    validate present([:department_name]), where: attribute_equals(:account_type, :employee), on: [:create, :update]
+    validate attribute_equals(:account_type, :employee), where: attribute_equals(:admin, true)
   end
 ```
-### Unique Identity
+
+
+Lets try this out - we will create several user and then query for them.
+```elixir
+iex -S mix phx.server
+
+# test department_name is absent
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :create, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com",
+                 department_name: "Office Actor", account_type: :customer}
+    )
+  |> Support.AshApi.create!()
+)
+# now we should expect the following error
+** (Ash.Error.Invalid) Input Invalid
+
+* department_name: must be absent.
+
+# but this should still work
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com"}
+    )
+  |> Support.AshApi.create!()
+)
+```
+
+#### Present
+
+Attribute must be present
+
+```elixir
+iex -S mix phx.server
+
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
+                       department_name: "Office Actor", account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
+# we should get this error
+** (Ash.Error.Invalid) Input Invalid
+
+* email: has already been taken.
+
+
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
+                       department_name: "Office Actor", account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
+admin = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_admin, %{first_name: "Karma", last_name: "Sönam", email: "karma@example.com",
+                    department_name: "Office Admin", account_type: :employee, admin: true}
+    )
+  |> Support.AshApi.create!()
+)
+```
+
+#### Attribute Equals
+
+
+
+### Uniqueness (Identity)
+
+In order to ensure that the email is a unique identifier - we use the `identities` feature.  Unfortunately, this feature behaves differently depending on the Data Layer in use.  In particular, from the docs, we see
+  Ash.DataLayer.Ets will actually require you to set pre_check_with since the ETS data layer has no built in support for unique constraints.
+
+In order to
 ```elixir
   identities do
-    identity :full_name, [:first_name, :last_name]
-    identity :email, [:email]
+    identity :email, [:email], pre_check_with: Support.AshApi
+    identity :full_name, [:first_name, :middle_name, :last_name], pre_check_with: Support.AshApi
   end
+```
+
+```elixir
+iex -S mix phx.server
+
+customer = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_customer, %{first_name: "Ratna", last_name: "Sönam", email: "ratna@example.com"}
+    )
+  |> Support.AshApi.create!()
+)
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "ratna@example.com",
+                       department_name: "Office Actor", account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
+# we should get this error
+** (Ash.Error.Invalid) Input Invalid
+
+* email: has already been taken.
+
+# But the following should work
+employee = (
+  Support.User
+  |> Ash.Changeset.for_create(
+      :new_employee, %{first_name: "Nyima", last_name: "Sönam", email: "nyima@example.com",
+                       department_name: "Office Actor", account_type: :employee}
+    )
+  |> Support.AshApi.create!()
+)
 ```
 
 
