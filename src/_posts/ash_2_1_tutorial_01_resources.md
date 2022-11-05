@@ -9,124 +9,23 @@ categories: elixir phoenix ash
 excerpt: Beginner's guide to the Ash framework - starting with resources
 ---
 
-I've been curious about the Elixir Ash Framework and with the current 'stable' release, I decided to spend part of my vacation to explore and hopefully learn Ash.
 
-When learning, I enjoy tutorials that demonstrate:
-* stepwise building an app (features within a context)
-* demonstrate integrations that are similar to 'real-world' usages
-I found this ElixirConf 2020 [Introduction to the Ash Framework](https://www.youtube.com/watch?v=2U3vQHXCF0s) video presentation by [Zach Daniel](https://github.com/zachdaniel) - the Ash Framework Author, which is what I was looking for, but its syntax and configuration is for Ash 1.x and not Ash 2.x.
+This article assumes the basic setup explained in [Ash Framework 2.1 Tutorial - 00 Introduction](/elixir/ash_2_1_tutorial_00_introduction/) is completed.
 
-I will try to reproduce the flow of the video tutorial for Ash 2.x (with a few side adventures of my own).  I am using the [Ash Tutorials / Hex Docs](https://hexdocs.pm/ash/get-started.html) and the associated [talk slides](https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020) the [Ash Docs](https://ash-hq.org/docs/guides/ash/latest) are also very helpful.
+## Create Structure
 
-## Overview
+As we explained in the introduction minimally as requires 3 parts: Resource, Registry and API.
 
-[Ash Framework](https://ash-hq.org/) is a declarative, resource-oriented application development framework for [Elixir](https://elixir-lang.org/). A resource can model anything, like a database table, an external API, or even custom code.
-
-Having played with Ash a bit now, it nicely separates the Data Layer and Business Logic, the Access APIs AND facilitates common needs / patterns, ie:
-* Validations & Constraints
-* Queries (aggregates, calculations)
-* Authentication (not yet authorization)
-* ...
-Without excluding standard elixir tooling.  I haven't tried this, but Ash claims to be easily extensible.
-
-Given the flexibility of Ash's uses of resources, we will start with a very simple organization (similar to rails - resources will reflect database tables that are directly acted upon.  Once the App gets a bit more complicated (and our resources get a annoyingly large), we will restructure the app to reflect a more modular approach.
-
-NOTE: A resource based app that separates the Data Layer, Business Logic and Access Layers is a new fresh approach, but takes a bit of rethinking.
-
-In the [Thinking Elixir Podcast # 123](https://podcast.thinkingelixir.com/123) Zach describes the design of Ash to be **Declarative Design** designed to preserve functional mindset and splits applications into two aspects.
-1. **Resources** - a description of attributes and what actions are allowed (what is required and what should happen)
-2. **Engine** - follow the instructions of the resource
-
-However, I like to think of Ash as having four Layers:
-* **Engines** - The Ash engine handles the parallelization/running of requests to Ash.
-* **Application APIs** - external access to data and actions (AshActions, AshJsonAPI, AshGraphQL, etc)
-* **Resources** - a description of what should happen (actions allowed and the data required)
-* **Data Layer** - data persistence (in memory, ETS, Mnesia, PostgreSQL, etc)
-
-## Project
-
-Build and deploy a Simple Helpdesk Ticketing website.  This keeps this tutorial close to the Ash Documents and tutorials.  Thus we will install the Ash Framework within a Phoenix Project.
-
-----------
-
-## Install Phoenix (1.7)
-
-First I let's install the unreleased version of Phoenix 1.7 by following these [instructions](https://github.com/phoenixframework/phoenix/blob/master/installer/README.md):
-```bash
-mix archive.uninstall phx_new
-git clone https://github.com/phoenixframework/phoenix
-cd phoenix/installer
-MIX_ENV=prod mix do archive.build, archive.install
-cd ../..
-mix phx.new helpdesk
-cd helpdesk
-mix ecto.create
-git init
-git add .
-git commit -m "initial phoenix commit"
-iex -S mix phx.server
-```
-
-Now we have a fully functional Phoenix site - with the new Phoenix Tailwind CSS design.
-
-![Phoenix 1.7 Start Page](/images/phoenix_ash_tutorial/phoenix_1_7.png)
-
-## Add Ash (2.1)
-
-Now let's include the Ash Framework within Phoenix -- with the goal of leaving Phoenix completely standard and parallel to Ash.
-
-
-Start by adding Ash to the mix file:
-```elixir
-# mix.exs
-  defp deps do
-    [
-      {:ash, "~> 2.1"},
-      # {:ash_postgres, "~> 1.0"},
-      # {:ash_graphql, "~> 0.21.0"},
-      # {:ash_phoenix, "~> 1.1"},
-      # this is a nice touch too if using vs-code and ElixirLs
-      {:elixir_sense, github: "elixir-lsp/elixir_sense", only: [:dev, :test]},
-      # ...
-    ]
-  end
-```
-
-and we can add these to our .formatter file too:
-```elixir
-# .formatter.exs
-[
-  import_deps: [:ecto, :ecto_sql, :phoenix, :ash],
-  #                                add this ^^^^
-  # ...
-]
-```
-
-Now we need to install these dependencies (packages) with:
-```bash
-mix deps.get
-iex -S mix phx.server
-```
-
-----------
-
-## Building with Ash
-
-### Ash Structural Basics
-
-Our system will need users, tickets and comments.
-
-We will start with a user resource.
-
-Ash needs to define its API and register its available resources - so we will create the following files:
+We will make these now starting with a 'user' resource:
 ```bash
 mkdir -p lib/support/resources
 touch lib/support/resources/user.ex
 touch lib/support/registry.ex
 touch lib/support/ash_api.ex
 ```
+In the following sections we will the contents and usage of each file and extend their functionality as we go.
 
-### User Resource
+## User Resource
 
 A resource minimally needs actions (things to do) and attributes (information associated with the resource)
 ```elixir
@@ -189,7 +88,7 @@ Again, let's test all is still well:
 iex -S mix phx.server
 ```
 
-### Ash API
+## Ash API
 
 This file defines defines what APIs are associated with which resources.  We will build this out as we go too.
 ```elixir
@@ -208,7 +107,7 @@ Again, let's test all is still well:
 iex -S mix phx.server
 ```
 
-### Usage
+## Usage
 
 Let's see if what we built actually works.
 
@@ -289,7 +188,7 @@ iex -S mix phx.server
 >
 ```
 
-### Attribute (input) Constraints
+## Attribute (input) Constraints
 
 Of course we probably want some control of the attributes.  We want to ensure some fields receive data or limits on this data - for example, we want limit the account types to :employee or :customer, the admin field by default should be false, and we definately need a first and last name, but not a middle name.
 
@@ -489,7 +388,6 @@ admin = (
   |> Support.AshApi.create!()
 )
 ```
-
 
 ### Validate Attribute Absent
 
