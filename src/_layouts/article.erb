@@ -19,7 +19,8 @@
                 <div class="text-md text-right mt-2 mb-0 text-slate-500">
                   Updated: <%= resource.data.updated&.strftime('%F') %>
                 </div>
-                <h1><%= resource.data.title %></h1>
+                <h1 class="text-gray-600"><%= resource.data.title %></h1>
+                <h2 class="text-center text-blue-400"><%= resource.data.subtitle %></h2>
                 <article class="text-lg pt-1">
                   <%= yield %>
                 </article>

@@ -1,6 +1,7 @@
 ---
 layout: post
-title:  "Ash Framework 2.1 Tutorial - 01 Resources"
+title:  Ash 2.1 Tutorial - 01 Resources
+subtitle: Resources and Attributes
 date:   2022-11-04 01:59:53 +0200
 updated:   2022-11-05 01:59:53 +0200
 slug: elixir
@@ -536,8 +537,12 @@ customer = (
 
 # Resources
 
-* https://www.youtube.com/watch?v=2U3vQHXCF0s
-* https://hexdocs.pm/ash/relationships.html#loading-related-data
+**Documentation**
+* https://www.ash-hq.org/
+* https://hexdocs.pm/ash/get-started.html
 * https://www.ash-hq.org/docs/guides/ash/2.4.1/tutorials/get-started.md
 * https://github.com/phoenixframework/phoenix/blob/master/installer/README.md
+
+**Ash Framework 1.5** - Video and Slides
+* https://www.youtube.com/watch?v=2U3vQHXCF0s
 * https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020?slide=6

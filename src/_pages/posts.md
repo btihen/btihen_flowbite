@@ -22,8 +22,8 @@ paginate:
           Updated: <%= post.data.updated.strftime('%F') %>
         </span>
       </div>
-      <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"><a href="<%= post.relative_url %>">
-        <%= post.data.title %></a>
+      <h2 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+        <a href="<%= post.relative_url %>"><%= post.data.title %></a>
       </h2>
       <p class="mb-5 font-light text-gray-700 dark:text-gray-400">
         <%= post.data.excerpt %>

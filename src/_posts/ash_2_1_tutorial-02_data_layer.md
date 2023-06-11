@@ -1,6 +1,7 @@
 ---
 layout: post
-title:  "Ash Framework 2.1 Tutorial - 02 Data-Layer"
+title:  "Ash 2.1 Tutorial - 02 DataLayer"
+subtitle: Data Persistence
 date:   2022-11-04 01:59:53 +0200
 updated:   2022-11-05 01:59:53 +0200
 slug: elixir

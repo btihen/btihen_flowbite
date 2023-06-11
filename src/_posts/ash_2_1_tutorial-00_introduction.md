@@ -1,6 +1,7 @@
 ---
 layout: post
-title:  "Ash Framework 2.1 Tutorial - 00 Introduction"
+title:  Ash 2.1 Tutorial - 00 Introduction
+subtitle: Overview
 date:   2022-11-04 01:59:53 +0200
 updated:   2022-11-05 01:59:53 +0200
 slug: elixir
@@ -9,6 +10,21 @@ categories: elixir phoenix ash
 excerpt: Beginner's guide to the Ash framework - Introduction and Project Setup
 ---
 
+**Ash Framework 2.1 - A Beginner's Tutorial**
+1. [Introduction](/elixir/ash_2_1_tutorial-00_introduction/)
+2. [Resources](/elixir/ash_2_1_tutorial-01_resources/)
+3. [Data-Layer](/elixir/ash_2_1_tutorial-02_data_layer/)
+4. [Relationships](elixir/ash_2_1_tutorial-03_relationships/)
+5. Authentication
+6. Authorization
+7. Architecture
+8. Engines & Flow
+9. LiveView
+10. GraphQL
+11. JSON API
+
+
+**Note:** it is expected that you are already familiar with Elixir (but you need not be an expert)
 
 [Ash Framework](https://ash-hq.org/) is a declarative, resource-oriented application development framework for [Elixir](https://elixir-lang.org/). A resource can model anything, like a database table, an external API, or even custom code.
 
@@ -120,8 +136,12 @@ Now you can continue on with [Ash Framework 2.1 Tutorial - 01 Resources](/elixir
 
 # Resources
 
-* https://www.youtube.com/watch?v=2U3vQHXCF0s
-* https://hexdocs.pm/ash/relationships.html#loading-related-data
+**Documentation**
+* https://www.ash-hq.org/
+* https://hexdocs.pm/ash/get-started.html
 * https://www.ash-hq.org/docs/guides/ash/2.4.1/tutorials/get-started.md
 * https://github.com/phoenixframework/phoenix/blob/master/installer/README.md
+
+**Ash Framework 1.5** - Video and Slides
+* https://www.youtube.com/watch?v=2U3vQHXCF0s
 * https://speakerdeck.com/zachsdaniel1/introduction-to-the-ash-framework-elixir-conf-2020?slide=6

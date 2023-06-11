@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Ash Framework 2.1 Tutorial - 06 GraphQL"
+title:  "Ash 2.1 Tutorial - 06 GraphQL"
 date:   2022-11-04 01:59:53 +0200
 updated:   2022-11-05 01:59:53 +0200
 slug: elixir

@@ -92,10 +92,12 @@ input[type="search"] {
 article > ol {
   list-style-type: decimal;
   list-style-position: inside;
+  margin-bottom: 1rem;
 }
 
 article > ul {
   list-style: inside;
+  margin-bottom: 1rem;
 }
 
 /*
